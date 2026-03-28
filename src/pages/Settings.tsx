@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { forceCacheUpdate } from '../versionPoller';
+import BackButton from '../components/BackButton';
 
 export default function Settings() {
   const [tapCount, setTapCount] = useState(0);
@@ -27,7 +27,7 @@ export default function Settings() {
     <div className="np-container">
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <h1 className="np-title" style={{ margin: 0 }}>Settings</h1>
-        <Link to="/dashboard" className="np-button">Back</Link>
+        <BackButton fallback="/dashboard" />
       </div>
 
       <div className="np-section">

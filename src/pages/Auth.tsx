@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import BackButton from '../components/BackButton';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -42,7 +42,7 @@ export default function Auth() {
       
       {!isPWA && (
         <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
-          <Link to="/" className="np-button" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>← Back</Link>
+          <BackButton fallback="/" />
         </div>
       )}
 

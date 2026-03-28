@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses } from '../lib/api';
 import AddExpense from '../components/AddExpense';
+import BackButton from '../components/BackButton';
 
 export default function GroupDetails() {
   const { id } = useParams<{ id: string }>();
@@ -51,7 +52,7 @@ export default function GroupDetails() {
     return (
       <div className="np-container">
         <p className="np-text-danger">Group not found or inaccessible.</p>
-        <Link to="/" className="np-button mt-4">Back Home</Link>
+        <BackButton fallback="/dashboard" />
       </div>
     );
   }
@@ -60,7 +61,7 @@ export default function GroupDetails() {
     <div className="np-container">
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <h1 className="np-title" style={{ margin: 0, border: 'none' }}>{group.name}</h1>
-        <Link to="/dashboard" className="np-button">Back</Link>
+        <BackButton fallback="/dashboard" />
       </div>
 
       <div className="np-section" style={{ padding: '1rem' }}>
