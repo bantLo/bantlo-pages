@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import NeoButton from '../components/NeoButton';
 import { supabase } from '../lib/supabase';
 import { fetchUserGroups, createGroup } from '../lib/api';
 
@@ -49,18 +50,18 @@ export default function Dashboard() {
     <div className="np-container">
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <h1 className="np-title" style={{ margin: 0, border: 'none' }}>bantLo</h1>
-        <Link to="/settings" className="np-button">Settings</Link>
+        <NeoButton to="/settings">Settings</NeoButton>
       </div>
 
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.2rem', textTransform: 'uppercase' }}>Your Groups</h2>
-        <button 
-          className="np-button np-button-primary" 
+        <NeoButton 
+          variant="primary" 
           onClick={() => setShowCreate(!showCreate)}
           style={{ padding: '0.4rem 1rem' }}
         >
           {showCreate ? 'Close' : '+ New'}
-        </button>
+        </NeoButton>
       </div>
 
       {showCreate && (
@@ -84,8 +85,8 @@ export default function Dashboard() {
             }}
           />
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button type="submit" className="np-button np-button-primary" style={{ flex: 1 }}>Create</button>
-            <button type="button" className="np-button" onClick={() => setShowCreate(false)}>Cancel</button>
+            <NeoButton type="submit" variant="primary" style={{ flex: 1 }}>Create</NeoButton>
+            <NeoButton type="button" onClick={() => setShowCreate(false)}>Cancel</NeoButton>
           </div>
         </form>
       )}

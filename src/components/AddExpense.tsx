@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import NeoButton from './NeoButton';
 
 interface Member {
   user_id: string;
@@ -141,9 +142,9 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        <button type="button" className={`np-button ${splitType === 0 ? 'np-button-primary' : ''}`} onClick={() => setSplitType(0)} style={{ flex: 1, padding: '0.5rem' }}>Equal</button>
-        <button type="button" className={`np-button ${splitType === 1 ? 'np-button-primary' : ''}`} onClick={() => setSplitType(1)} style={{ flex: 1, padding: '0.5rem' }}>Exact</button>
-        <button type="button" className={`np-button ${splitType === 2 ? 'np-button-primary' : ''}`} onClick={() => setSplitType(2)} style={{ flex: 1, padding: '0.5rem' }}>Shares</button>
+        <NeoButton type="button" variant={splitType === 0 ? 'primary' : 'default'} onClick={() => setSplitType(0)} style={{ flex: 1, padding: '0.5rem' }}>Equal</NeoButton>
+        <NeoButton type="button" variant={splitType === 1 ? 'primary' : 'default'} onClick={() => setSplitType(1)} style={{ flex: 1, padding: '0.5rem' }}>Exact</NeoButton>
+        <NeoButton type="button" variant={splitType === 2 ? 'primary' : 'default'} onClick={() => setSplitType(2)} style={{ flex: 1, padding: '0.5rem' }}>Shares</NeoButton>
       </div>
 
       {splitType === 1 && (
@@ -186,10 +187,10 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
       </div>
 
       <div style={{ display: 'flex', gap: '1rem' }}>
-        <button type="submit" className="np-button np-button-primary" style={{ flex: 1 }} disabled={loading || (splitType === 1 && exactRemaining !== 0)}>
+        <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={loading || (splitType === 1 && exactRemaining !== 0)}>
           {loading ? 'Saving...' : 'Save Expense'}
-        </button>
-        <button type="button" className="np-button" onClick={onCancel} disabled={loading}>Cancel</button>
+        </NeoButton>
+        <NeoButton type="button" onClick={onCancel} disabled={loading}>Cancel</NeoButton>
       </div>
     </form>
   );

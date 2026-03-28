@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses } from '../lib/api';
 import AddExpense from '../components/AddExpense';
 import BackButton from '../components/BackButton';
+import NeoButton from '../components/NeoButton';
 
 export default function GroupDetails() {
   const { id } = useParams<{ id: string }>();
@@ -70,8 +71,8 @@ export default function GroupDetails() {
         
         {!showAddExpense && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-            <button className="np-button np-button-primary" onClick={() => setShowAddExpense(true)}>Add Expense</button>
-            <button className="np-button" style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }}>Settle Up</button>
+            <NeoButton variant="primary" onClick={() => setShowAddExpense(true)}>Add Expense</NeoButton>
+            <NeoButton style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }}>Settle Up</NeoButton>
           </div>
         )}
       </div>

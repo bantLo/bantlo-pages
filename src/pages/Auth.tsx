@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import BackButton from '../components/BackButton';
+import NeoButton from '../components/NeoButton';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -112,14 +113,14 @@ export default function Auth() {
             />
           </div>
           
-          <button 
+          <NeoButton 
             type="submit" 
-            className="np-button np-button-primary" 
+            variant="primary" 
             style={{ width: '100%' }}
             disabled={loading}
           >
             {loading ? 'Processing...' : isLogin ? 'Authenticate' : 'Sign Up'}
-          </button>
+          </NeoButton>
         </form>
 
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>

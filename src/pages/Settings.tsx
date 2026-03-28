@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { forceCacheUpdate } from '../versionPoller';
 import BackButton from '../components/BackButton';
 import { useNavigate } from 'react-router-dom';
+import NeoButton from '../components/NeoButton';
 
 export default function Settings() {
   const [tapCount, setTapCount] = useState(0);
@@ -85,13 +86,13 @@ export default function Settings() {
       </div>
 
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-         <button 
-           className="np-button np-button-danger" 
+         <NeoButton 
+           variant="danger" 
            style={{ width: '100%' }}
            onClick={handleLogout}
          >
            Sign Out
-         </button>
+         </NeoButton>
       </div>
     </div>
   );

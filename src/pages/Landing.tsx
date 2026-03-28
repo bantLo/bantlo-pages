@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import NeoButton from '../components/NeoButton';
 
 export default function LandingPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -59,7 +59,7 @@ export default function LandingPage() {
       {/* Navbar Minimalist */}
       <nav className="np-flex-between" style={{ padding: '1.5rem 2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', borderBottom: '2px solid var(--border-color)' }}>
         <h1 className="np-title" style={{ margin: 0, border: 'none', fontSize: '1.5rem' }}>bantLo</h1>
-        <Link to="/auth" className="np-button" style={{ padding: '0.4rem 1rem' }}>Login</Link>
+        <NeoButton to="/auth" style={{ padding: '0.4rem 1rem' }}>Login</NeoButton>
       </nav>
 
       {/* Hero Section */}
@@ -80,22 +80,22 @@ export default function LandingPage() {
             {/* Desktop Dashboard Link */}
             <div className="desktop-only" style={{ flexDirection: 'column' }}>
               <p style={{ fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase' }}>Access your Dashboard</p>
-              <Link to="/dashboard" className="np-button np-button-primary" style={{ minWidth: '100%', justifyContent: 'center', padding: '1rem' }}>
+              <NeoButton to="/dashboard" variant="primary" style={{ minWidth: '100%', justifyContent: 'center', padding: '1rem' }}>
                 Go to Web App →
-              </Link>
+              </NeoButton>
             </div>
 
             {/* Mobile PWA Install */}
             <div className="mobile-only">
               <p style={{ fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase' }}>Get the Mobile App</p>
-              <button 
-                className="np-button np-button-primary" 
+              <NeoButton 
+                variant="primary" 
                 onClick={handleInstallClick}
                 disabled={!deferredPrompt}
                 style={{ width: '100%', padding: '1rem' }}
               >
                 {deferredPrompt ? 'Install App ↓' : 'App Installed / Use Share Sheet'}
-              </button>
+              </NeoButton>
             </div>
           </div>
         </div>
