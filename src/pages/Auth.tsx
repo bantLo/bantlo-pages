@@ -35,6 +35,7 @@ export default function Auth() {
         if (error) throw error;
       } else if (viewState === 'signup') {
         if (!name.trim()) throw new Error('Please enter your full name.');
+        if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
         if (password !== confirmPassword) throw new Error('Passwords do not match.');
         
         const { error } = await supabase.auth.signUp({ 
@@ -175,6 +176,7 @@ export default function Auth() {
                   marginBottom: viewState === 'signup' ? '1rem' : '0'
                 }}
                 placeholder="••••••••"
+                minLength={8}
               />
               
               {viewState === 'signup' && (
@@ -197,6 +199,7 @@ export default function Auth() {
                       fontFamily: 'inherit'
                     }}
                     placeholder="••••••••"
+                    minLength={8}
                   />
                 </>
               )}
