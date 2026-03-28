@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupName, updateExpenseDescription } from '../lib/api';
+import { useParams, useNavigate } from 'react-router-dom';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupName, updateExpenseDescription, removeMember, deleteGroup } from '../lib/api';
 import AddExpense from '../components/AddExpense';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 
 export default function GroupDetails() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [group, setGroup] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
@@ -80,6 +81,26 @@ export default function GroupDetails() {
       loadGroupData(id);
     } catch(err: any) {
       alert('Failed to delete expense: ' + err.message);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!id || !window.confirm('Remove this member from the group?')) return;
+    try {
+      await removeMember(id, userId);
+      loadGroupData(id);
+    } catch(err: any) {
+      alert('Failed to remove member: ' + err.message);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!id || !window.confirm('WARNING: Are you absolutely sure? This will permanently delete the group, all expenses, and all balances forever.')) return;
+    try {
+      await deleteGroup(id);
+      navigate('/dashboard');
+    } catch(err: any) {
+      alert('Failed to delete group: ' + err.message);
     }
   };
 
@@ -185,6 +206,26 @@ export default function GroupDetails() {
 
       <div className="np-section" style={{ borderStyle: 'dashed' }}>
         <div className="np-flex-between" style={{ marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1.1rem', margin: 0, textTransform: 'uppercase' }}>Members</h2>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {members.map(m => (
+            <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+              <span>{m.profiles?.display_name || m.profiles?.email || 'Unknown'}</span>
+              <button 
+                onClick={() => handleRemoveMember(m.user_id)} 
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} 
+                title="Remove Member"
+              >
+                🗑️
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="np-section" style={{ borderStyle: 'dashed' }}>
+        <div className="np-flex-between" style={{ marginBottom: '1rem' }}>
           <h2 style={{ fontSize: '1.1rem', margin: 0, textTransform: 'uppercase' }}>Balances</h2>
         </div>
         {balances.length === 0 ? (
@@ -197,7 +238,7 @@ export default function GroupDetails() {
               const isZero = amt === 0;
               return (
                 <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                  <span>{b.auth?.email || 'Unknown'}</span>
+                  <span>{b.profiles?.display_name || b.profiles?.email || 'Unknown'}</span>
                   <span style={{ 
                     fontWeight: 'bold', 
                     color: isZero ? 'var(--text-secondary)' : (isPositive ? 'var(--text-accent)' : 'var(--text-danger)') 
@@ -252,6 +293,17 @@ export default function GroupDetails() {
           </div>
         )}
       </div>
+
+      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+         <NeoButton 
+           variant="danger" 
+           style={{ width: '100%' }}
+           onClick={handleDeleteGroup}
+         >
+           Delete Group Permanently
+         </NeoButton>
+      </div>
+
     </div>
   );
 }

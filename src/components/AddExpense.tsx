@@ -4,7 +4,7 @@ import NeoButton from './NeoButton';
 
 interface Member {
   user_id: string;
-  auth: { email: string };
+  profiles: { display_name?: string; email: string };
 }
 
 interface AddExpenseProps {
@@ -159,7 +159,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', maxHeight: '200px', overflowY: 'auto' }}>
         {members.map(m => (
           <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-            <span style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.auth?.email || m.user_id}</span>
+            <span style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.profiles?.display_name || m.profiles?.email || m.user_id}</span>
             
             {splitType === 0 && <span>{computedSplits[m.user_id] || 0.00}</span>}
             

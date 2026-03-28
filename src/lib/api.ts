@@ -76,7 +76,7 @@ export async function fetchGroupMembers(groupId: string) {
     .from('group_members')
     .select(`
       user_id,
-      auth:user_id ( email ) 
+      profiles:user_id ( display_name, email ) 
     `)
     .eq('group_id', groupId);
 
@@ -88,7 +88,7 @@ export async function fetchGroupBalances(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('balances')
-      .select('user_id, balance, auth:user_id(email)')
+      .select('user_id, balance, profiles:user_id(display_name, email)')
       .eq('group_id', groupId);
 
     if (error) throw error;
@@ -111,7 +111,7 @@ export async function fetchRecentExpenses(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, description, amount, paid_by, created_at')
+      .select('id, description, amount, paid_by, created_at, profiles:paid_by(display_name, email)')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -160,5 +160,15 @@ export async function updateExpenseDescription(expenseId: string, newDesc: strin
 
 export async function updateGroupName(groupId: string, newName: string) {
   const { error } = await supabase.from('groups').update({ name: newName }).eq('id', groupId);
+  if (error) throw error;
+}
+
+export async function deleteGroup(groupId: string) {
+  const { error } = await supabase.from('groups').delete().eq('id', groupId);
+  if (error) throw error;
+}
+
+export async function removeMember(groupId: string, userId: string) {
+  const { error } = await supabase.from('group_members').delete().match({ group_id: groupId, user_id: userId });
   if (error) throw error;
 }

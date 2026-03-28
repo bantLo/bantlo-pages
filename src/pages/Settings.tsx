@@ -15,6 +15,9 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
 
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [displayNameMsg, setDisplayNameMsg] = useState('');
+
   const handleVersionTap = () => {
     const newCount = tapCount + 1;
     setTapCount(newCount);
@@ -48,6 +51,20 @@ export default function Settings() {
     } else {
       setPasswordMsg('Password instantly updated!');
       setNewPassword('');
+    }
+  };
+
+  const handleUpdateDisplayName = async () => {
+    if (!newDisplayName || newDisplayName.length < 2) {
+      setDisplayNameMsg('Display Name must be at least 2 characters.');
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ data: { full_name: newDisplayName } });
+    if (error) {
+      setDisplayNameMsg(error.message);
+    } else {
+      setDisplayNameMsg('Display Name instantly updated!');
+      setNewDisplayName('');
     }
   };
 
@@ -106,6 +123,29 @@ export default function Settings() {
         {tapCount > 0 && tapCount < 5 && (
           <p className="np-text-muted" style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-accent)' }}>
             {5 - tapCount} more taps to force update
+          </p>
+        )}
+      </div>
+
+      <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '1.5rem' }}>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Profile Identity</p>
+        <input 
+          type="text" 
+          value={newDisplayName}
+          onChange={e => {
+            setNewDisplayName(e.target.value);
+            setDisplayNameMsg('');
+          }}
+          placeholder="New Display Name..." 
+          maxLength={30}
+          style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }}
+        />
+        <NeoButton style={{ width: '100%', borderColor: 'var(--text-secondary)' }} onClick={handleUpdateDisplayName}>
+          Update Display Name
+        </NeoButton>
+        {displayNameMsg && (
+          <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: displayNameMsg.includes('updated') ? 'var(--text-accent)' : 'var(--text-danger)' }}>
+            {displayNameMsg}
           </p>
         )}
       </div>
