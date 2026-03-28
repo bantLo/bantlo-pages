@@ -60,6 +60,12 @@ export default function Settings() {
             <span className="np-text-muted">UI Architecture:</span> 
             <strong style={{ marginLeft: '0.5rem' }}>Vite React + NeoPop Dark</strong>
           </li>
+          <li style={{ marginBottom: '0.75rem' }}>
+            <span className="np-text-muted">Logo Design:</span> 
+            <strong style={{ marginLeft: '0.5rem' }}>
+              <a href="https://www.svgrepo.com/svg/388633/split-cells" target="_blank" rel="noreferrer" style={{ color: 'var(--text-primary)' }}>SVG Repo</a>
+            </strong>
+          </li>
         </ul>
       </div>
       

@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom';
 export default function Logo() {
   return (
     <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-      {/* Temporary Brutalist SVG Logo placeholder */}
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--bg-surface)" xmlns="http://www.w3.org/2000/svg" style={{ border: '2px solid var(--border-color)', display: 'block' }}>
-        <path d="M12 4L4 20h16L12 4z" fill="var(--text-accent)" />
-        <rect x="10" y="10" width="4" height="6" fill="var(--bg-dark)" />
+      <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 14V5C4 4.44772 4.44772 4 5 4H19C19.5523 4 20 4.44772 20 5V43C20 43.5523 19.5523 44 19 44H5C4.44772 44 4 43.5523 4 43V34" stroke="var(--text-accent)" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M44 34V43C44 43.5523 43.5523 44 43 44H29C28.4477 44 28 43.5523 28 43V5C28 4.44772 28.4477 4 29 4H43C43.5523 4 44 4.44772 44 5V14" stroke="var(--text-accent)" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M28 24L44 24.0132" stroke="var(--text-primary)" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M4 24.0132L20 24" stroke="var(--text-primary)" strokeWidth="4" strokeLinecap="round"/>
+        <path d="M39.2275 28.7779L40.8185 27.1869L44.0005 24.0049L40.8185 20.8229L39.2275 19.232" stroke="var(--text-primary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M8.75537 28.7862L7.16438 27.1952L3.9824 24.0132L7.16438 20.8313L8.75537 19.2403" stroke="var(--text-primary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
       {/* Heavy stylized text mapping the Accent visual layout */}
       <h1 className="np-title" style={{ margin: 0, border: 'none', fontSize: '1.75rem', fontWeight: 900, textTransform: 'none', letterSpacing: '-1.5px', paddingBottom: 0 }}>
