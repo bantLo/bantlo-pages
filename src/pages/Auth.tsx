@@ -8,6 +8,8 @@ import Logo from '../components/Logo';
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [viewState, setViewState] = useState<'login' | 'signup' | 'forgot_password'>('login');
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
@@ -33,7 +35,17 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (viewState === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        if (!name.trim()) throw new Error('Please enter your full name.');
+        if (password !== confirmPassword) throw new Error('Passwords do not match.');
+        
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { full_name: name },
+            emailRedirectTo: window.location.origin
+          }
+        });
         if (error) throw error;
         setMessage({ text: 'Check your email for the confirmation link!', type: 'success' });
       } else if (viewState === 'forgot_password') {
@@ -81,6 +93,30 @@ export default function Auth() {
         )}
 
         <form onSubmit={handleAuth}>
+          {viewState === 'signup' && (
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                FULL NAME
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'var(--bg-dark)',
+                  border: '2px solid var(--border-color)',
+                  color: 'var(--text-primary)',
+                  outline: 'none',
+                  fontFamily: 'inherit'
+                }}
+                placeholder="John Doe"
+              />
+            </div>
+          )}
+
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
               EMAIL ADDRESS
@@ -119,10 +155,35 @@ export default function Auth() {
                   border: '2px solid var(--border-color)',
                   color: 'var(--text-primary)',
                   outline: 'none',
-                  fontFamily: 'inherit'
+                  fontFamily: 'inherit',
+                  marginBottom: viewState === 'signup' ? '1rem' : '0'
                 }}
                 placeholder="••••••••"
               />
+              
+              {viewState === 'signup' && (
+                <>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                    CONFIRM PASSWORD
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: 'var(--bg-dark)',
+                      border: '2px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      fontFamily: 'inherit'
+                    }}
+                    placeholder="••••••••"
+                  />
+                </>
+              )}
             </div>
           )}
           
@@ -142,38 +203,41 @@ export default function Auth() {
               <button 
                 type="button" 
                 onClick={() => setViewState('forgot_password')}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', padding: '0.5rem' }}
               >
                 Forgot Password?
               </button>
-              <button 
+              <NeoButton 
                 type="button" 
+                variant="default"
                 onClick={() => setViewState('signup')}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+                style={{ width: '100%', marginTop: '0.5rem', borderColor: 'var(--text-accent)' }}
               >
-                Don't have an account? Sign up
-              </button>
+                Create an Account
+              </NeoButton>
             </>
           )}
           
           {viewState === 'signup' && (
-            <button 
+            <NeoButton 
               type="button" 
+              variant="default"
               onClick={() => setViewState('login')}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+              style={{ width: '100%', marginTop: '0.5rem' }}
             >
-              Already have an account? Sign in
-            </button>
+              Already have an account? Sign In
+            </NeoButton>
           )}
 
           {viewState === 'forgot_password' && (
-            <button 
+            <NeoButton 
               type="button" 
+              variant="default"
               onClick={() => setViewState('login')}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit' }}
+              style={{ width: '100%', marginTop: '0.5rem' }}
             >
-              Back to Sign in
-            </button>
+              Back to Sign In
+            </NeoButton>
           )}
         </div>
       </div>

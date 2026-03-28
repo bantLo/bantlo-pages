@@ -131,3 +131,34 @@ export async function fetchRecentExpenses(groupId: string) {
     return [];
   }
 }
+
+// ==========================================
+// Phase 2: Members & Deletions
+// ==========================================
+
+export async function addMemberByEmail(groupId: string, email: string) {
+  const { data, error } = await supabase.rpc('add_member_by_email', {
+    p_email: email,
+    p_group_id: groupId
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteExpense(expenseId: string) {
+  // With Database Triggers established natively inside PostgreSQL, deleting the absolute origin 
+  // automatically cascades into `expense_splits` and reverse-calculates mathematical absolute 
+  // distributions onto `balances` instantaneously on-chain!
+  const { error: deletionErr } = await supabase.from('expenses').delete().eq('id', expenseId);
+  if (deletionErr) throw deletionErr;
+}
+
+export async function updateExpenseDescription(expenseId: string, newDesc: string) {
+  const { error } = await supabase.from('expenses').update({ description: newDesc.substring(0, 30) }).eq('id', expenseId);
+  if (error) throw error;
+}
+
+export async function updateGroupName(groupId: string, newName: string) {
+  const { error } = await supabase.from('groups').update({ name: newName }).eq('id', groupId);
+  if (error) throw error;
+}

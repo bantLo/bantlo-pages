@@ -1,43 +1,31 @@
 import { useEffect } from 'react';
 
-const LAST_VERSION_CHECK_KEY = 'bantlo_last_version_check';
-const CHECK_INTERVAL_MS = 3.5 * 24 * 60 * 60 * 1000; // 3.5 days in ms
+const APP_VERSION_KEY = 'bantlo_current_version';
 
 export async function checkVersion() {
-  const lastCheck = localStorage.getItem(LAST_VERSION_CHECK_KEY);
-  const now = Date.now();
-
-  if (lastCheck && now - parseInt(lastCheck, 10) < CHECK_INTERVAL_MS) {
-    console.log('[Version Poller] Cache is fresh, no need to check version yet.');
-    return;
-  }
-
   try {
-    console.log('[Version Poller] Checking for app updates...');
-    const response = await fetch('/version.info', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Failed to fetch version info');
+    const fetchUrl = import.meta.env.VITE_VERSION_INFO_URL || '/version.info';
+    const response = await fetch(fetchUrl, { cache: 'no-store' });
+    if (!response.ok) return;
     
-    const latestVersionInfo = await response.json();
+    const latestVersionString = await response.text();
+    const currentVersionString = localStorage.getItem(APP_VERSION_KEY);
     
-    // In a real app we might store currentVersion in our config block or env vars
-    // For now we'll dynamically grab the CURRENT cached version info if possible
-    const currentResponse = await fetch('/version.info'); // from cache
-    if (currentResponse.ok) {
-      const currentVersionInfo = await currentResponse.json();
-      if (latestVersionInfo.version !== currentVersionInfo.version || latestVersionInfo.updated_at !== currentVersionInfo.updated_at) {
-        // App has an update
-        if (window.confirm('A new version of bantLo is available. Refresh to update?')) {
-          forceCacheUpdate();
-          return;
-        }
+    // First load execution tracking bypass
+    if (!currentVersionString) {
+      localStorage.setItem(APP_VERSION_KEY, latestVersionString);
+      return;
+    }
+
+    if (currentVersionString !== latestVersionString) {
+      console.log('Update detected running in background!', latestVersionString);
+      if (window.confirm('A robust new version of bantLo was detected! Would you like to refresh your app to apply it?')) {
+        localStorage.setItem(APP_VERSION_KEY, latestVersionString);
+        forceCacheUpdate();
       }
     }
-    
-    // Update last check time
-    localStorage.setItem(LAST_VERSION_CHECK_KEY, now.toString());
-
   } catch (error) {
-    console.warn('[Version Poller] Error checking version:', error);
+    console.warn('[Version Poller] Network unavailable, bypassing GitHub version check.');
   }
 }
 
