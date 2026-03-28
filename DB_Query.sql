@@ -281,6 +281,8 @@ CREATE POLICY "Update payments natively" ON expense_payments FOR UPDATE USING (E
 CREATE POLICY "Delete payments natively" ON expense_payments FOR DELETE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 
 CREATE POLICY "View balances natively" ON balances FOR SELECT USING (is_group_member(group_id));
+CREATE POLICY "Insert balances natively" ON balances FOR INSERT WITH CHECK (is_group_member(group_id) OR (auth.uid() = user_id));
+CREATE POLICY "Update balances natively" ON balances FOR UPDATE USING (is_group_member(group_id) OR (auth.uid() = user_id));
 
 CREATE POLICY "View settlements natively" ON settlements FOR SELECT USING (is_group_member(group_id));
 CREATE POLICY "Insert settlements natively" ON settlements FOR INSERT WITH CHECK (is_group_member(group_id));

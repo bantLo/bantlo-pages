@@ -23,12 +23,19 @@ export async function fetchUserGroups(userId: string) {
     
     const validGroups = data.map((membership: any) => membership.groups).filter(Boolean);
     
-    // Cache successfully fetched groups to IndexedDB
-    const db = await getDB();
-    const tx = db.transaction('groups', 'readwrite');
-    validGroups.forEach(g => tx.store.put(g));
-    await tx.done;
-
+    try {
+      // Full sync: Clear local cache and re-fill with fresh server results
+      const db = await getDB();
+      await db.clear('groups');
+      const tx = db.transaction('groups', 'readwrite');
+      for (const g of validGroups) {
+        await tx.store.put(g);
+      }
+      await tx.done;
+    } catch (dbError) {
+      console.error('Failed to sync groups to IndexedDB:', dbError);
+    }
+    
     return validGroups;
   } catch (error) {
     if (!navigator.onLine) {
@@ -159,14 +166,28 @@ export async function updateExpenseDescription(expenseId: string, newDesc: strin
   if (error) throw error;
 }
 
-export async function updateGroupName(groupId: string, newName: string) {
-  const { error } = await supabase.from('groups').update({ name: newName }).eq('id', groupId);
+export async function updateGroupSettings(groupId: string, updates: { name?: string, currency?: string }) {
+  const { error } = await supabase.from('groups').update(updates).eq('id', groupId);
   if (error) throw error;
+}
+
+export async function updateGroupName(groupId: string, newName: string) {
+  return updateGroupSettings(groupId, { name: newName });
 }
 
 export async function deleteGroup(groupId: string) {
   const { error } = await supabase.from('groups').delete().eq('id', groupId);
   if (error) throw error;
+  
+  // Clean up local cache for this group
+  try {
+    const db = await getDB();
+    await db.delete('groups', groupId);
+    await db.delete('balances', groupId);
+    await db.delete('expenses', groupId);
+  } catch (err) {
+    console.error('Failed to clean up local group cache:', err);
+  }
 }
 
 export async function removeMember(groupId: string, userId: string) {

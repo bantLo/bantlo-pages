@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupName, updateExpenseDescription, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, updateExpenseDescription, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement } from '../lib/api';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
 import BackButton from '../components/BackButton';
@@ -26,6 +26,9 @@ export default function GroupDetails() {
   
   const [editingGroupId, setEditingGroupId] = useState(false);
   const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupCurrency, setEditGroupCurrency] = useState('');
+
+  const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [editExpenseDesc, setEditExpenseDesc] = useState('');
@@ -130,13 +133,13 @@ export default function GroupDetails() {
     }
   };
 
-  const handleUpdateGroupName = async () => {
+  const handleUpdateGroupSettings = async () => {
     if (!editGroupName.trim()) return setEditingGroupId(false);
     try {
-      await updateGroupName(id!, editGroupName);
-      setGroup({ ...group, name: editGroupName });
+      await updateGroupSettings(id!, { name: editGroupName, currency: editGroupCurrency });
+      setGroup({ ...group, name: editGroupName, currency: editGroupCurrency });
     } catch(err) {
-      alert('Failed to update group name');
+      alert('Failed to update group settings');
     }
     setEditingGroupId(false);
   };
@@ -174,19 +177,40 @@ export default function GroupDetails() {
 
       <div className="np-flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         {editingGroupId ? (
-          <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1 }}>
             <input 
               value={editGroupName}
               onChange={e => setEditGroupName(e.target.value)}
-              style={{ background: 'transparent', border: '1px solid var(--text-accent)', color: 'white', fontSize: '1.5rem', flex: 1, outline: 'none', fontFamily: 'inherit' }}
+              style={{ background: 'transparent', border: '1px solid var(--text-accent)', color: 'white', fontSize: '1.2rem', width: '100%', outline: 'none', fontFamily: 'inherit', padding: '0.2rem' }}
               autoFocus
+              placeholder="Group Name"
             />
-            <button onClick={handleUpdateGroupName} style={{ background: 'transparent', color: 'var(--text-accent)', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>✓</button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <select
+                value={editGroupCurrency}
+                onChange={e => setEditGroupCurrency(e.target.value)}
+                style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-color)', color: 'white', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit', padding: '0.2rem' }}
+              >
+                {COMMON_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <button 
+                onClick={handleUpdateGroupSettings} 
+                style={{ background: 'var(--text-accent)', color: 'black', border: 'none', cursor: 'pointer', padding: '0.2rem 0.75rem', fontWeight: 'bold' }}
+              >
+                SAVE
+              </button>
+              <button 
+                onClick={() => setEditingGroupId(false)} 
+                style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+              >
+                CANCEL
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <h1 className="np-title" style={{ margin: 0, border: 'none' }}>{group.name}</h1>
-            <button onClick={() => { setEditGroupName(group.name); setEditingGroupId(true); }} style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>✏️</button>
+            <button onClick={() => { setEditGroupName(group.name); setEditGroupCurrency(group.currency); setEditingGroupId(true); }} style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>✏️</button>
           </div>
         )}
         <BackButton fallback="/dashboard" />

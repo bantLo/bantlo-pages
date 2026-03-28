@@ -11,7 +11,10 @@ export default function Dashboard() {
   const [showCreate, setShowCreate] = useState(false);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
   const [newFriendEmail, setNewFriendEmail] = useState('');
+
+  const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   useEffect(() => {
     loadGroups();
@@ -39,8 +42,9 @@ export default function Dashboard() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await createGroup(user.id, newGroupName.trim());
+      await createGroup(user.id, newGroupName.trim(), newGroupCurrency);
       setNewGroupName('');
+      setNewGroupCurrency('USD');
       setShowCreate(false);
       loadGroups(); // Refresh list
     } catch (error: any) {
@@ -114,6 +118,26 @@ export default function Dashboard() {
               fontFamily: 'inherit'
             }}
           />
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+              Group Currency
+            </label>
+            <select
+              value={newGroupCurrency}
+              onChange={(e) => setNewGroupCurrency(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                background: 'var(--bg-dark)',
+                border: '2px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                fontFamily: 'inherit'
+              }}
+            >
+              {COMMON_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <NeoButton type="submit" variant="primary" style={{ flex: 1 }}>Create</NeoButton>
             <NeoButton type="button" onClick={() => setShowCreate(false)}>Cancel</NeoButton>
