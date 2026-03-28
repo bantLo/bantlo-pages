@@ -405,11 +405,15 @@ export default function GroupDetails() {
                         </div>
                       )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.25rem' }}>
-                        {e.payments && e.payments.length === 1 && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            Paid by {e.payments[0].profiles?.display_name || e.payments[0].profiles?.email || 'Someone'}
-                          </span>
-                        )}
+                        {e.payments && e.payments.length === 1 && (() => {
+                          const p = e.payments[0];
+                          const prof = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                          return (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              Paid by {prof?.display_name || prof?.email || 'Someone'}
+                            </span>
+                          );
+                        })()}
                         {e.payments && e.payments.length > 1 && (
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                             Paid by {e.payments.length} people
@@ -439,8 +443,14 @@ export default function GroupDetails() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
                 {settlements.map((s: any) => {
-                  const fromName = members.find(m => m.user_id === s.from_user_id)?.profiles?.display_name || 'Someone';
-                  const toName = members.find(m => m.user_id === s.to_user_id)?.profiles?.display_name || 'Someone';
+                  const fromM = members.find(m => m.user_id === s.from_user_id);
+                  const toM = members.find(m => m.user_id === s.to_user_id);
+                  
+                  const fromProf = Array.isArray(fromM?.profiles) ? fromM?.profiles[0] : fromM?.profiles;
+                  const toProf = Array.isArray(toM?.profiles) ? toM?.profiles[0] : toM?.profiles;
+                  
+                  const fromName = fromProf?.display_name || fromProf?.email || 'Someone';
+                  const toName = toProf?.display_name || toProf?.email || 'Someone';
                   
                   return (
                     <div key={s.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>

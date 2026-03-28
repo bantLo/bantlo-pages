@@ -88,7 +88,7 @@ export async function fetchGroupMembers(groupId: string) {
     .from('group_members')
     .select(`
       user_id,
-      profiles ( display_name, email ) 
+      profiles:user_id ( display_name, email ) 
     `)
     .eq('group_id', groupId);
 
@@ -100,7 +100,7 @@ export async function fetchGroupBalances(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('balances')
-      .select('user_id, balance, profiles(display_name, email)')
+      .select('user_id, balance, profiles:user_id(display_name, email)')
       .eq('group_id', groupId);
 
     if (error) throw error;
@@ -123,7 +123,7 @@ export async function fetchRecentExpenses(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, description, amount, created_at, payments:expense_payments(user_id, amount_paid, profiles(display_name, email)), splits:expense_splits(user_id, amount_owed)')
+      .select('id, description, amount, created_at, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(10);
