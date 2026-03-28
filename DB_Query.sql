@@ -1,5 +1,5 @@
 -- ==========================================
--- bantLo PostgreSQL Architecture V2.3 (Splitwise Parity Engine)
+-- bantLo PostgreSQL Architecture V2.4 (Splitwise Parity Engine)
 -- Execute this entire block in your Supabase SQL Editor
 -- ==========================================
 
@@ -289,3 +289,33 @@ CREATE POLICY "Update balances natively" ON balances FOR UPDATE USING (is_group_
 CREATE POLICY "View settlements natively" ON settlements FOR SELECT USING (is_group_member(group_id));
 CREATE POLICY "Insert settlements natively" ON settlements FOR INSERT WITH CHECK (is_group_member(group_id));
 CREATE POLICY "Delete settlements natively" ON settlements FOR DELETE USING (is_group_member(group_id));
+
+-- ==========================================
+-- 4. BANTLO MIGRATION V2.4 (Performance & Joins)
+-- ==========================================
+
+-- Ensure foreign key links from members to public profiles
+-- This allows PostgREST to automatically join names/emails to memberships
+ALTER TABLE public.group_members 
+DROP CONSTRAINT IF EXISTS fk_group_members_profiles;
+
+ALTER TABLE public.group_members 
+ADD CONSTRAINT fk_group_members_profiles 
+FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+-- Link balances to profiles for consistent naming in the Settle Up tool
+ALTER TABLE public.balances 
+DROP CONSTRAINT IF EXISTS fk_balances_profiles;
+
+ALTER TABLE public.balances 
+ADD CONSTRAINT fk_balances_profiles 
+FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+
+-- Link expenses to profiles for the "paid_by" field (if used)
+ALTER TABLE public.expense_payments 
+DROP CONSTRAINT IF EXISTS fk_expense_payments_profiles;
+
+ALTER TABLE public.expense_payments 
+ADD CONSTRAINT fk_expense_payments_profiles 
+FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+

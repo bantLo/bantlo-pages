@@ -280,18 +280,22 @@ export default function GroupDetails() {
               <h2 style={{ fontSize: '1.1rem', margin: 0, textTransform: 'uppercase' }}>Members</h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {members.map(m => (
-                <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                  <span>{m.profiles?.display_name || m.profiles?.email || 'Unknown'}</span>
-                  <button 
-                    onClick={() => handleRemoveMember(m.user_id)} 
-                    style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} 
-                    title="Remove Member"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))}
+              {members.map(m => {
+                const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+                const label = profile?.display_name || profile?.email || m.user_id || 'Unknown';
+                return (
+                  <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+                    <span>{label}</span>
+                    <button 
+                      onClick={() => handleRemoveMember(m.user_id)} 
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} 
+                      title="Remove Member"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

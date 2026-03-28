@@ -181,11 +181,15 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
             style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', outline: 'none' }}
           >
             <option value="" disabled>Select User</option>
-            {members.map(m => (
-              <option key={m.user_id} value={m.user_id}>
-                {m.profiles?.display_name || m.profiles?.email || m.user_id}
-              </option>
-            ))}
+            {members.map(m => {
+              const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+              const label = profile?.display_name || profile?.email || m.user_id || 'Unknown Member';
+              return (
+                <option key={m.user_id} value={m.user_id}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         ) : (
           <div>
@@ -193,19 +197,23 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
               Remaining to fund: {multiPayerRemaining.toFixed(2)}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '150px', overflowY: 'auto' }}>
-              {members.map(m => (
-                <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                  <span style={{ fontSize: '0.85rem' }}>{m.profiles?.display_name || m.profiles?.email || 'Unknown'}</span>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="Paid"
-                    value={multiPayers[m.user_id] || ''} 
-                    onChange={e => setMultiPayers({...multiPayers, [m.user_id]: parseFloat(e.target.value) || 0})}
-                    style={{ width: '80px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
-                  />
-                </div>
-              ))}
+              {members.map(m => {
+                const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+                const label = profile?.display_name || profile?.email || 'Unknown';
+                return (
+                  <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+                    <span style={{ fontSize: '0.85rem' }}>{label}</span>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="Paid"
+                      value={multiPayers[m.user_id] || ''} 
+                      onChange={e => setMultiPayers({...multiPayers, [m.user_id]: parseFloat(e.target.value) || 0})}
+                      style={{ width: '80px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -228,34 +236,38 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', maxHeight: '200px', overflowY: 'auto' }}>
-        {members.map(m => (
-          <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-            <span style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.profiles?.display_name || m.profiles?.email || m.user_id}</span>
-            
-            {splitType === 0 && <span style={{ fontFamily: 'monospace' }}>{computedSplits[m.user_id] || 0.00}</span>}
-            
-            {splitType === 1 && (
-              <input 
-                type="number" 
-                step="0.01" 
-                value={exactAmounts[m.user_id] || ''} 
-                onChange={e => setExactAmounts({...exactAmounts, [m.user_id]: parseFloat(e.target.value) || 0})}
-                style={{ width: '80px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
-              />
-            )}
+        {members.map(m => {
+          const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+          const label = profile?.display_name || profile?.email || m.user_id || 'Unknown';
+          return (
+            <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+              <span style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+              
+              {splitType === 0 && <span style={{ fontFamily: 'monospace' }}>{computedSplits[m.user_id] || 0.00}</span>}
+              
+              {splitType === 1 && (
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={exactAmounts[m.user_id] || ''} 
+                  onChange={e => setExactAmounts({...exactAmounts, [m.user_id]: parseFloat(e.target.value) || 0})}
+                  style={{ width: '80px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
+                />
+              )}
 
-            {splitType === 2 && (
-              <input 
-                type="number" 
-                step="1" 
-                placeholder="Shares"
-                value={shares[m.user_id] || ''} 
-                onChange={e => setShares({...shares, [m.user_id]: parseInt(e.target.value) || 0})}
-                style={{ width: '60px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
-              />
-            )}
-          </div>
-        ))}
+              {splitType === 2 && (
+                <input 
+                  type="number" 
+                  step="1" 
+                  placeholder="Shares"
+                  value={shares[m.user_id] || ''} 
+                  onChange={e => setShares({...shares, [m.user_id]: parseInt(e.target.value) || 0})}
+                  style={{ width: '60px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div style={{ display: 'flex', gap: '1rem' }}>
