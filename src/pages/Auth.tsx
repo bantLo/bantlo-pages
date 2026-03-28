@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 import CacheManagerModal from '../components/CacheManagerModal';
 import Logo from '../components/Logo';
@@ -66,8 +65,25 @@ export default function Auth() {
     <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center' }}>
       
       {!isPWA && (
-        <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
-          <BackButton fallback="/" />
+        <div style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 100 }}>
+          <button 
+            onClick={() => window.location.href = '/'} 
+            style={{ 
+              background: 'var(--bg-dark)', 
+              color: 'var(--text-primary)', 
+              border: '2px solid var(--text-primary)', 
+              padding: '0.4rem 1rem', 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.5rem',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'inherit',
+              boxShadow: '4px 4px 0 var(--text-primary)'
+            }}
+          >
+            <span>←</span> Back
+          </button>
         </div>
       )}
 
