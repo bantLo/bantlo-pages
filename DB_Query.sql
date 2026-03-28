@@ -291,30 +291,32 @@ CREATE POLICY "Insert settlements natively" ON settlements FOR INSERT WITH CHECK
 CREATE POLICY "Delete settlements natively" ON settlements FOR DELETE USING (is_group_member(group_id));
 
 -- ==========================================
--- 4. BANTLO MIGRATION V2.4 (Performance & Joins)
+-- 4. BANTLO MIGRATION V2.4 (Repair & Solder)
 -- ==========================================
 
--- Ensure foreign key links from members to public profiles
--- This allows PostgREST to automatically join names/emails to memberships
+-- 1. REPAIR: Ensure every auth.user has a matching public.profile row
+-- This prevents the foreign key updates from failing due to orphaned users.
+INSERT INTO public.profiles (id, email)
+SELECT id, email FROM auth.users
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. SOLDER: Link group memberships to public profiles for nested names/emails
 ALTER TABLE public.group_members 
 DROP CONSTRAINT IF EXISTS fk_group_members_profiles;
-
 ALTER TABLE public.group_members 
 ADD CONSTRAINT fk_group_members_profiles 
 FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
 
--- Link balances to profiles for consistent naming in the Settle Up tool
+-- 3. SOLDER: Link balances to profiles for consistent naming
 ALTER TABLE public.balances 
 DROP CONSTRAINT IF EXISTS fk_balances_profiles;
-
 ALTER TABLE public.balances 
 ADD CONSTRAINT fk_balances_profiles 
 FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
 
--- Link expenses to profiles for the "paid_by" field (if used)
+-- 4. SOLDER: Link expense payments to profiles
 ALTER TABLE public.expense_payments 
 DROP CONSTRAINT IF EXISTS fk_expense_payments_profiles;
-
 ALTER TABLE public.expense_payments 
 ADD CONSTRAINT fk_expense_payments_profiles 
 FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
