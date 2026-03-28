@@ -170,6 +170,36 @@ export async function updateExpenseDescription(expenseId: string, newDesc: strin
   if (error) throw error;
 }
 
+export async function updateFullExpense(
+  expenseId: string, 
+  updates: { description: string, amount: number, split_type: number },
+  payments: { user_id: string, amount_paid: number }[],
+  splits: { user_id: string, amount_owed: number }[]
+) {
+  // 1. Update the parent expense record
+  const { error: e1 } = await supabase
+    .from('expenses')
+    .update(updates)
+    .eq('id', expenseId);
+  if (e1) throw e1;
+
+  // 2. Delete existing payments & splits (Triggers will automatically reverse old balances)
+  // We do this precisely for this expense_id
+  await supabase.from('expense_payments').delete().eq('expense_id', expenseId);
+  await supabase.from('expense_splits').delete().eq('expense_id', expenseId);
+
+  // 3. Insert new payments & splits (Triggers will compute new balances)
+  const { error: e2 } = await supabase
+    .from('expense_payments')
+    .insert(payments.map(p => ({ ...p, expense_id: expenseId })));
+  if (e2) throw e2;
+
+  const { error: e3 } = await supabase
+    .from('expense_splits')
+    .insert(splits.map(s => ({ ...s, expense_id: expenseId })));
+  if (e3) throw e3;
+}
+
 export async function updateGroupSettings(groupId: string, updates: { name?: string, currency?: string }) {
   const { error } = await supabase.from('groups').update(updates).eq('id', groupId);
   if (error) throw error;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, updateExpenseDescription, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement } from '../lib/api';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
 import BackButton from '../components/BackButton';
@@ -30,8 +30,7 @@ export default function GroupDetails() {
 
   const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
-  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-  const [editExpenseDesc, setEditExpenseDesc] = useState('');
+  const [editingExpense, setEditingExpense] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -66,8 +65,9 @@ export default function GroupDetails() {
 
   const handleExpenseSaved = () => {
     setShowAddExpense(false);
+    setEditingExpense(null);
     if (id) loadGroupData(id);
-    alert('Expense successfully added!');
+    alert('Expense successfully saved!');
   };
 
   const handleSettlementSaved = () => {
@@ -144,16 +144,7 @@ export default function GroupDetails() {
     setEditingGroupId(false);
   };
 
-  const handleUpdateExpenseDesc = async (expenseId: string) => {
-    if (!editExpenseDesc.trim()) return setEditingExpenseId(null);
-    try {
-      await updateExpenseDescription(expenseId, editExpenseDesc);
-      setExpenses(expenses.map(e => e.id === expenseId ? { ...e, description: editExpenseDesc.substring(0, 30) } : e));
-    } catch(err) {
-      alert('Failed to update expense description');
-    }
-    setEditingExpenseId(null);
-  };
+
 
   if (loading) return <div className="np-container"><p className="np-title" style={{ border: 'none', animation: 'pulse 1.5s infinite'}}>Loading group...</p></div>;
 
@@ -220,15 +211,24 @@ export default function GroupDetails() {
         <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>Currency: {group.currency}</p>
         <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>Members: {members.length}</p>
         
-        {(!showAddExpense && !showAddMember && !showAddSettlement) && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-            <NeoButton variant="primary" onClick={() => setShowAddExpense(true)}>Add Expense</NeoButton>
-            <NeoButton style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }} onClick={() => setShowAddSettlement(true)}>Settle Up</NeoButton>
-            <NeoButton style={{ gridColumn: 'span 2', borderColor: 'var(--text-secondary)', color: 'var(--text-secondary)' }} onClick={() => setShowAddMember(true)}>Invite Member</NeoButton>
-          </div>
-        )}
+      {showAddExpense && (
+        <AddExpense 
+          groupId={id!} 
+          members={members} 
+          onComplete={handleExpenseSaved} 
+          onCancel={() => { setShowAddExpense(false); setEditingExpense(null); }} 
+          editExpenseId={editingExpense?.id}
+          initialData={editingExpense}
+        />
+      )}
       </div>
-
+      {(!showAddExpense && !showAddMember && !showAddSettlement) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <NeoButton variant="primary" onClick={() => setShowAddExpense(true)}>Add Expense</NeoButton>
+          <NeoButton style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }} onClick={() => setShowAddSettlement(true)}>Settle Up</NeoButton>
+          <NeoButton style={{ gridColumn: 'span 2', borderColor: 'var(--text-secondary)', color: 'var(--text-secondary)' }} onClick={() => setShowAddMember(true)}>Invite Member</NeoButton>
+        </div>
+      )}
       {showAddMember && (
         <div className="np-section" style={{ borderStyle: 'solid', borderColor: 'var(--text-accent)' }}>
           <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Invite Member</h2>
@@ -251,15 +251,6 @@ export default function GroupDetails() {
             </div>
           </form>
         </div>
-      )}
-
-      {showAddExpense && (
-        <AddExpense 
-          groupId={group.id} 
-          members={members} 
-          onComplete={handleExpenseSaved} 
-          onCancel={() => setShowAddExpense(false)} 
-        />
       )}
 
       {showAddSettlement && (
@@ -387,23 +378,16 @@ export default function GroupDetails() {
                 {expenses.map((e: any) => (
                   <div key={e.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
-                      {editingExpenseId === e.id ? (
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <input 
-                            value={editExpenseDesc}
-                            onChange={ev => setEditExpenseDesc(ev.target.value)}
-                            maxLength={30}
-                            style={{ background: 'transparent', border: '1px solid var(--text-accent)', color: 'white', flex: 1, outline: 'none', fontSize: '0.9rem', width: '100%', fontFamily: 'inherit' }}
-                            autoFocus
-                          />
-                          <button onClick={() => handleUpdateExpenseDesc(e.id)} style={{ background: 'transparent', color: 'var(--text-accent)', border: 'none', cursor: 'pointer' }}>✓</button>
-                        </div>
-                      ) : (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <span style={{ fontWeight: 'bold' }}>{e.description}</span>
-                          <button onClick={() => { setEditExpenseDesc(e.description); setEditingExpenseId(e.id); }} style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', padding: 0 }} title="Edit Description">✏️</button>
+                          <button 
+                            onClick={() => { setEditingExpense(e); setShowAddExpense(true); }} 
+                            style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', padding: 0 }} 
+                            title="Edit Full Expense"
+                          >
+                            ✏️
+                          </button>
                         </div>
-                      )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.25rem' }}>
                         {e.payments && e.payments.length === 1 && (() => {
                           const p = e.payments[0];

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import NeoButton from './NeoButton';
+import { updateFullExpense } from '../lib/api';
 
 interface Member {
   user_id: string;
@@ -12,11 +13,13 @@ interface AddExpenseProps {
   members: Member[];
   onComplete: () => void;
   onCancel: () => void;
+  editExpenseId?: string;
+  initialData?: any;
 }
 
-export default function AddExpense({ groupId, members, onComplete, onCancel }: AddExpenseProps) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState<number | ''>('');
+export default function AddExpense({ groupId, members, onComplete, onCancel, editExpenseId, initialData }: AddExpenseProps) {
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [amount, setAmount] = useState<number | ''>(initialData?.amount || '');
   
   // Funding States (Who Paid)
   const [payerType, setPayerType] = useState<'single' | 'multiple'>('single');
@@ -24,19 +27,46 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
   const [multiPayers, setMultiPayers] = useState<Record<string, number>>({});
   
   // Consumption States (Who owes)
-  const [splitType, setSplitType] = useState<0 | 1 | 2>(0); // 0=Equal, 1=Exact, 2=Shares
+  const [splitType, setSplitType] = useState<0 | 1 | 2>(initialData?.split_type ?? 0);
   const [exactAmounts, setExactAmounts] = useState<Record<string, number>>({});
   const [shares, setShares] = useState<Record<string, number>>({});
   
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        setSinglePayerId(data.session.user.id);
+    if (initialData) {
+      // Handle Payments
+      if (initialData.payments?.length > 1) {
+        setPayerType('multiple');
+        const mp: Record<string, number> = {};
+        initialData.payments.forEach((p: any) => mp[p.user_id] = Number(p.amount_paid));
+        setMultiPayers(mp);
+      } else if (initialData.payments?.length === 1) {
+        setPayerType('single');
+        setSinglePayerId(initialData.payments[0].user_id);
       }
-    });
-  }, []);
+
+      // Handle Splits
+      if (initialData.split_type === 1) {
+        const ea: Record<string, number> = {};
+        initialData.splits.forEach((s: any) => ea[s.user_id] = Number(s.amount_owed));
+        setExactAmounts(ea);
+      } else if (initialData.split_type === 2) {
+        const sh: Record<string, number> = {};
+        // Note: For shares, we don't have the original share numbers in the DB split table,
+        // so we'll treat them as exact amounts or assume 1 share if present.
+        // Actually, let's just use the owed amounts as the shares for now.
+        initialData.splits.forEach((s: any) => sh[s.user_id] = Number(s.amount_owed));
+        setShares(sh);
+      }
+    } else {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user) {
+          setSinglePayerId(data.session.user.id);
+        }
+      });
+    }
+  }, [initialData]);
 
   const calculateSplits = () => {
     const total = Number(amount) || 0;
@@ -96,43 +126,45 @@ export default function AddExpense({ groupId, members, onComplete, onCancel }: A
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not auth');
 
-      const { data: exp, error: e1 } = await supabase.from('expenses').insert([{
-        group_id: groupId,
-        amount: Number(amount),
-        description,
-        split_type: splitType
-      }]).select().single();
-      if (e1) throw e1;
-
-      let paymentsToInsert = [];
-      if (payerType === 'single') {
-        paymentsToInsert.push({
-          expense_id: exp.id,
-          user_id: singlePayerId,
-          amount_paid: Number(amount)
-        });
-      } else {
-        paymentsToInsert = Object.entries(multiPayers).filter(([_, amt]) => amt > 0).map(([uid, amt]) => ({
-          expense_id: exp.id,
-          user_id: uid,
-          amount_paid: amt
-        }));
-      }
-      const { error: eP } = await supabase.from('expense_payments').insert(paymentsToInsert);
-      if (eP) throw eP;
+      const paymentsToInsert = payerType === 'single' 
+        ? [{ user_id: singlePayerId, amount_paid: Number(amount) }]
+        : Object.entries(multiPayers).filter(([_, amt]) => amt > 0).map(([uid, amt]) => ({
+            user_id: uid,
+            amount_paid: amt
+          }));
 
       const splitsToInsert = Object.entries(computedSplits).filter(([_, amt]) => amt > 0).map(([uid, amt]) => ({
-        expense_id: exp.id,
         user_id: uid,
         amount_owed: amt
       }));
-      const { error: e2 } = await supabase.from('expense_splits').insert(splitsToInsert);
-      if (e2) throw e2;
+
+      if (editExpenseId) {
+        await updateFullExpense(
+          editExpenseId,
+          { description, amount: Number(amount), split_type: splitType },
+          paymentsToInsert,
+          splitsToInsert
+        );
+      } else {
+        const { data: exp, error: e1 } = await supabase.from('expenses').insert([{
+          group_id: groupId,
+          amount: Number(amount),
+          description,
+          split_type: splitType
+        }]).select().single();
+        if (e1) throw e1;
+
+        const { error: eP } = await supabase.from('expense_payments').insert(paymentsToInsert.map(p => ({ ...p, expense_id: exp.id })));
+        if (eP) throw eP;
+
+        const { error: e2 } = await supabase.from('expense_splits').insert(splitsToInsert.map(s => ({ ...s, expense_id: exp.id })));
+        if (e2) throw e2;
+      }
 
       onComplete();
     } catch (err: any) {
       console.error(err);
-      alert('Failed to add expense natively');
+      alert('Failed to save expense');
     } finally {
       setLoading(false);
     }
