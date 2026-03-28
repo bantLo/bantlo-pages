@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS groups (
   name TEXT NOT NULL,
   created_by UUID REFERENCES auth.users(id) NOT NULL,
   currency VARCHAR(3) DEFAULT 'USD',
+  is_friend_group BOOLEAN DEFAULT false,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
@@ -34,7 +35,6 @@ CREATE TABLE IF NOT EXISTS group_members (
 CREATE TABLE IF NOT EXISTS expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
-  paid_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   amount NUMERIC(10,2) NOT NULL,
   description VARCHAR(30) NOT NULL,
   notes TEXT,
@@ -47,6 +47,13 @@ CREATE TABLE IF NOT EXISTS expense_splits (
   expense_id UUID REFERENCES expenses(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   amount_owed NUMERIC(10,2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS expense_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  expense_id UUID REFERENCES expenses(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  amount_paid NUMERIC(10,2) NOT NULL CHECK (amount_paid >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS balances (
@@ -86,25 +93,29 @@ CREATE TRIGGER trg_init_user_balance
 AFTER INSERT ON group_members
 FOR EACH ROW EXECUTE FUNCTION init_user_balance();
 
--- Trigger B: When an expense is added, increase the 'paid_by' user's baseline.
-CREATE OR REPLACE FUNCTION update_balance_on_expense() RETURNS TRIGGER AS $$
+-- Trigger B: When an expense_payment is added, increase the user's absolute balance because they funded the group.
+CREATE OR REPLACE FUNCTION update_balance_on_payment() RETURNS TRIGGER AS $$
+DECLARE
+  v_group_id UUID;
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    UPDATE balances SET balance = balance + NEW.amount WHERE group_id = NEW.group_id AND user_id = NEW.paid_by;
+    SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
+    UPDATE balances SET balance = balance + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
   ELSIF TG_OP = 'DELETE' THEN
-    UPDATE balances SET balance = balance - OLD.amount WHERE group_id = OLD.group_id AND user_id = OLD.paid_by;
+    SELECT group_id INTO v_group_id FROM expenses WHERE id = OLD.expense_id;
+    UPDATE balances SET balance = balance - OLD.amount_paid WHERE group_id = v_group_id AND user_id = OLD.user_id;
   ELSIF TG_OP = 'UPDATE' THEN
-    UPDATE balances SET balance = balance - OLD.amount WHERE group_id = OLD.group_id AND user_id = OLD.paid_by;
-    UPDATE balances SET balance = balance + NEW.amount WHERE group_id = NEW.group_id AND user_id = NEW.paid_by;
+    SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
+    UPDATE balances SET balance = balance - OLD.amount_paid + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
   END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_expense_balance ON expenses;
-CREATE TRIGGER trg_expense_balance
-AFTER INSERT OR UPDATE OR DELETE ON expenses
-FOR EACH ROW EXECUTE FUNCTION update_balance_on_expense();
+DROP TRIGGER IF EXISTS trg_payment_balance ON expense_payments;
+CREATE TRIGGER trg_payment_balance
+AFTER INSERT OR UPDATE OR DELETE ON expense_payments
+FOR EACH ROW EXECUTE FUNCTION update_balance_on_payment();
 
 -- Trigger C: Decrease absolute balances based on how the expense was strictly split.
 CREATE OR REPLACE FUNCTION update_balance_on_split() RETURNS TRIGGER AS $$
@@ -176,6 +187,7 @@ ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expense_splits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expense_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE balances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settlements ENABLE ROW LEVEL SECURITY;
 
@@ -216,6 +228,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION add_friend_by_email(p_email TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  v_friend_id UUID;
+  v_group_id UUID;
+BEGIN
+  SELECT id INTO v_friend_id FROM auth.users WHERE email = p_email;
+  IF v_friend_id IS NULL THEN
+    RAISE EXCEPTION 'User email % not found. They must sign up to bantLo first.', p_email;
+  END IF;
+
+  IF v_friend_id = auth.uid() THEN
+    RAISE EXCEPTION 'You cannot add yourself as a friend.';
+  END IF;
+
+  INSERT INTO groups (name, created_by, is_friend_group) 
+  VALUES ('Friend: ' || p_email, auth.uid(), true) 
+  RETURNING id INTO v_group_id;
+
+  INSERT INTO group_members (group_id, user_id) VALUES (v_group_id, auth.uid());
+  INSERT INTO group_members (group_id, user_id) VALUES (v_group_id, v_friend_id);
+  
+  RETURN jsonb_build_object('success', true, 'group_id', v_group_id);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- General Secure Access Models
 CREATE POLICY "Public Profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
@@ -233,6 +271,11 @@ CREATE POLICY "Update expenses natively" ON expenses FOR UPDATE USING (is_group_
 CREATE POLICY "View splits natively" ON expense_splits FOR SELECT USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Insert splits natively" ON expense_splits FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Update splits natively" ON expense_splits FOR UPDATE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
+
+CREATE POLICY "View payments natively" ON expense_payments FOR SELECT USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
+CREATE POLICY "Insert payments natively" ON expense_payments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
+CREATE POLICY "Update payments natively" ON expense_payments FOR UPDATE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
+CREATE POLICY "Delete payments natively" ON expense_payments FOR DELETE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 
 CREATE POLICY "View balances natively" ON balances FOR SELECT USING (is_group_member(group_id));
 

@@ -13,6 +13,7 @@ export async function fetchUserGroups(userId: string) {
           id,
           name,
           currency,
+          is_friend_group,
           updated_at
         )
       `)
@@ -111,7 +112,7 @@ export async function fetchRecentExpenses(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, description, amount, paid_by, created_at, profiles:paid_by(display_name, email)')
+      .select('id, description, amount, created_at, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -196,4 +197,10 @@ export async function fetchRecentSettlements(groupId: string) {
 export async function deleteSettlement(settlementId: string) {
   const { error } = await supabase.from('settlements').delete().eq('id', settlementId);
   if (error) throw error;
+}
+
+export async function addFriendByEmail(email: string) {
+  const { data, error } = await supabase.rpc('add_friend_by_email', { p_email: email });
+  if (error) throw error;
+  return data;
 }

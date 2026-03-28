@@ -294,6 +294,54 @@ export default function GroupDetails() {
           </div>
         )}
       </div>
+
+      {balances.length > 0 && balances.some(b => Number(b.balance) !== 0) && (
+        <div className="np-section" style={{ borderStyle: 'dotted', borderColor: 'var(--text-accent)' }}>
+          <h2 style={{ fontSize: '1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>How to Settle Up</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {(() => {
+              const debtors = balances.filter(b => Number(b.balance) < -0.001).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) })).sort((a,b) => b.amount - a.amount);
+              const creditors = balances.filter(b => Number(b.balance) > 0.001).map(b => ({ ...b, amount: Number(b.balance) })).sort((a,b) => b.amount - a.amount);
+              
+              const optimized = [];
+              let d = 0, c = 0;
+              
+              while(d < debtors.length && c < creditors.length) {
+                const debtor = debtors[d];
+                const creditor = creditors[c];
+                const settleAmt = Math.min(debtor.amount, creditor.amount);
+                
+                if (settleAmt > 0.001) {
+                  optimized.push({
+                    from: debtor.profiles?.display_name || debtor.profiles?.email || 'Someone',
+                    to: creditor.profiles?.display_name || creditor.profiles?.email || 'Someone',
+                    amount: settleAmt
+                  });
+                }
+                
+                debtor.amount -= settleAmt;
+                creditor.amount -= settleAmt;
+                
+                if (debtor.amount < 0.001) d++;
+                if (creditor.amount < 0.001) c++;
+              }
+              
+              if (optimized.length === 0) return <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>All debts are incredibly small penny balances.</p>;
+              
+              return optimized.map((opt, idx) => (
+                <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', background: 'var(--bg-dark)', borderLeft: '3px solid var(--text-accent)' }}>
+                  <span style={{ fontSize: '0.9rem' }}>
+                    <strong style={{ color: 'var(--text-danger)' }}>{opt.from}</strong> owes <strong style={{ color: 'var(--text-accent)' }}>{opt.to}</strong>
+                  </span>
+                  <span style={{ fontWeight: 'bold' }}>
+                    {group.currency} {opt.amount.toFixed(2)}
+                  </span>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
       
       <div className="np-section" style={{ borderStyle: 'dashed' }}>
         <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Recent Expenses</h2>
@@ -321,9 +369,21 @@ export default function GroupDetails() {
                       <button onClick={() => { setEditExpenseDesc(e.description); setEditingExpenseId(e.id); }} style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', padding: 0 }} title="Edit Description">✏️</button>
                     </div>
                   )}
-                  <span className="np-text-muted" style={{ fontSize: '0.8rem' }}>
-                    {new Date(e.created_at).toLocaleDateString()}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.25rem' }}>
+                    {e.payments && e.payments.length === 1 && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        Paid by {e.payments[0].profiles?.display_name || e.payments[0].profiles?.email || 'Someone'}
+                      </span>
+                    )}
+                    {e.payments && e.payments.length > 1 && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        Paid by {e.payments.length} people
+                      </span>
+                    )}
+                    <span className="np-text-muted" style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                      {new Date(e.created_at).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
