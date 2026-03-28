@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import NeoButton from '../components/NeoButton';
+import Logo from '../components/Logo';
 
 export default function LandingPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -58,7 +59,7 @@ export default function LandingPage() {
 
       {/* Navbar Minimalist */}
       <nav className="np-flex-between" style={{ padding: '1.5rem 2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', borderBottom: '2px solid var(--border-color)' }}>
-        <h1 className="np-title" style={{ margin: 0, border: 'none', fontSize: '1.5rem' }}>bantLo</h1>
+        <Logo />
         <NeoButton to="/auth" style={{ padding: '0.4rem 1rem' }}>Login</NeoButton>
       </nav>
 

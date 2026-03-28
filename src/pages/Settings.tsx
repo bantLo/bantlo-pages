@@ -4,11 +4,13 @@ import { forceCacheUpdate } from '../versionPoller';
 import BackButton from '../components/BackButton';
 import { useNavigate } from 'react-router-dom';
 import NeoButton from '../components/NeoButton';
+import CacheManagerModal from '../components/CacheManagerModal';
 
 export default function Settings() {
   const [tapCount, setTapCount] = useState(0);
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
+  const [showCacheModal, setShowCacheModal] = useState(false);
 
   const handleVersionTap = () => {
     const newCount = tapCount + 1;
@@ -85,6 +87,13 @@ export default function Settings() {
         )}
       </div>
 
+      <div className="np-section" style={{ textAlign: 'center', borderStyle: 'dotted' }}>
+        <p className="np-text-muted" style={{ marginBottom: '1rem' }}>Advanced Options</p>
+        <NeoButton style={{ width: '100%', borderColor: 'var(--text-secondary)' }} onClick={() => setShowCacheModal(true)}>
+          Troubleshoot App Cache
+        </NeoButton>
+      </div>
+
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
          <NeoButton 
            variant="danger" 
@@ -94,6 +103,11 @@ export default function Settings() {
            Sign Out
          </NeoButton>
       </div>
+
+      <CacheManagerModal 
+        isOpen={showCacheModal} 
+        onClose={() => setShowCacheModal(false)} 
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import NeoButton from '../components/NeoButton';
+import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
 import { fetchUserGroups, createGroup } from '../lib/api';
 
@@ -49,7 +50,7 @@ export default function Dashboard() {
   return (
     <div className="np-container">
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
-        <h1 className="np-title" style={{ margin: 0, border: 'none' }}>bantLo</h1>
+        <Logo />
         <NeoButton to="/settings">Settings</NeoButton>
       </div>
 

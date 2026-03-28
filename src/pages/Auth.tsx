@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
+import CacheManagerModal from '../components/CacheManagerModal';
+import Logo from '../components/Logo';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -10,6 +12,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
   const [isPWA, setIsPWA] = useState(false);
+  const [showCacheModal, setShowCacheModal] = useState(false);
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
@@ -50,7 +53,9 @@ export default function Auth() {
         </div>
       )}
 
-      <h1 className="np-title" style={{ textAlign: 'center', border: 'none', marginBottom: '2rem', marginTop: !isPWA ? '3rem' : '0' }}>bantLo</h1>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem', marginTop: !isPWA ? '3rem' : '0' }}>
+        <Logo />
+      </div>
       
       <div className="np-section" style={{ boxShadow: 'var(--shadow-neopop)' }}>
         <h2 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', textTransform: 'uppercase' }}>
@@ -140,6 +145,25 @@ export default function Auth() {
           </button>
         </div>
       </div>
+
+      <div style={{ textAlign: 'center', marginTop: 'auto', paddingBottom: '2rem' }}>
+        <button 
+          onClick={() => setShowCacheModal(true)}
+          style={{ 
+            background: 'transparent', border: 'none', 
+            color: 'var(--text-secondary)', fontSize: '0.75rem', 
+            textDecoration: 'underline', cursor: 'pointer', 
+            fontFamily: 'inherit', opacity: 0.7 
+          }}
+        >
+          Troubleshooting: Force refresh app or clear cache
+        </button>
+      </div>
+
+      <CacheManagerModal 
+        isOpen={showCacheModal} 
+        onClose={() => setShowCacheModal(false)} 
+      />
     </div>
   );
 }

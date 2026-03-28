@@ -43,6 +43,8 @@ The application source code.
   - *Equal*: Slices the total evenly, dynamically assigning any fractional penny loss (e.g. 10.00 / 3) accurately to a specific subset of users to avoid rounding loss.
   - *Exact*: Prevents submission unless the exact inputs identically match the total.
   - *Shares*: Calculates fractional proportions based on variable assigned integer weights.
+- **`NeoButton.tsx`**: A global programmatic wrapper scaling all clickable interactions. It forcibly locks CSS animations down for 150ms before allowing routing or submissions, guaranteeing satisfying tactical feedback.
+- **`CacheManagerModal.tsx`**: Granular modal allowing independent execution against Service Worker Shell Caches versus IndexedDB Stores, serving as a dedicated failsafe.
 
 #### `src/pages/`
 - **`Landing.tsx`**: Public marketing page. Responsive CSS grids provide distinct views for Desktop (Dashboard CTA) and Mobile (`beforeinstallprompt` PWA installation trigger).
