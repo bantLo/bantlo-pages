@@ -4,8 +4,8 @@ const APP_VERSION_KEY = 'bantlo_current_version';
 
 export async function checkVersion() {
   try {
-    const fetchUrl = import.meta.env.VITE_VERSION_INFO_URL || '/version.info';
-    const response = await fetch(fetchUrl, { cache: 'no-store' });
+    let fetchUrl = import.meta.env.VITE_VERSION_INFO_URL || '/version.info';
+    let response = await fetch(fetchUrl, { cache: 'no-store' });
     if (!response.ok) return;
     
     const latestVersionString = await response.text();
