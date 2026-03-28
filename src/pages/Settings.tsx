@@ -2,10 +2,12 @@ import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { forceCacheUpdate } from '../versionPoller';
 import BackButton from '../components/BackButton';
+import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
   const [tapCount, setTapCount] = useState(0);
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const navigate = useNavigate();
 
   const handleVersionTap = () => {
     const newCount = tapCount + 1;
@@ -21,6 +23,12 @@ export default function Settings() {
         setTapCount(0);
       }, 1000);
     }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    indexedDB.deleteDatabase('bantlo-data-cache-v1'); // Completely wipe PWA DB cache purely on logout
+    navigate('/');
   };
 
   return (
@@ -80,7 +88,7 @@ export default function Settings() {
          <button 
            className="np-button np-button-danger" 
            style={{ width: '100%' }}
-           onClick={() => supabase.auth.signOut()}
+           onClick={handleLogout}
          >
            Sign Out
          </button>

@@ -21,6 +21,9 @@ export default function Auth() {
     setLoading(true);
     setMessage(null);
 
+    // Safely nuke any lingering PWA IndexedDB data from previous users
+    indexedDB.deleteDatabase('bantlo-data-cache-v1');
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
