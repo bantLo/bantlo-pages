@@ -8,24 +8,28 @@ export async function checkVersion() {
     let response = await fetch(fetchUrl, { cache: 'no-store' });
     if (!response.ok) return;
     
-    const latestVersionString = await response.text();
-    const currentVersionString = localStorage.getItem(APP_VERSION_KEY);
+    const latestData = await response.json();
+    const storedString = localStorage.getItem(APP_VERSION_KEY);
+    const currentData = storedString ? JSON.parse(storedString) : null;
     
-    // First load execution tracking bypass
-    if (!currentVersionString) {
-      localStorage.setItem(APP_VERSION_KEY, latestVersionString);
+    // First load or missing data
+    if (!currentData) {
+      localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
       return;
     }
 
-    if (currentVersionString !== latestVersionString) {
-      console.log('Update detected running in background!', latestVersionString);
-      if (window.confirm('A robust new version of bantLo was detected! Would you like to refresh your app to apply it?')) {
-        localStorage.setItem(APP_VERSION_KEY, latestVersionString);
+    if (currentData.version !== latestData.version) {
+      console.log('Update detected!', latestData.version);
+      if (window.confirm(`A new version (${latestData.version}) of bantLo is available! Refuse to be stale—refresh now?`)) {
+        localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
         forceCacheUpdate();
       }
+    } else {
+      // Even if version is same, update the message/metadata if it changed
+      localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
     }
   } catch (error) {
-    console.warn('[Version Poller] Network unavailable, bypassing GitHub version check.');
+    console.warn('[Version Poller] Check failed:', error);
   }
 }
 

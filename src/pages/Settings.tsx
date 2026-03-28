@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { forceCacheUpdate } from '../versionPoller';
+import { forceCacheUpdate, checkVersion } from '../versionPoller';
 import BackButton from '../components/BackButton';
 import { useNavigate } from 'react-router-dom';
 import NeoButton from '../components/NeoButton';
@@ -11,6 +11,19 @@ export default function Settings() {
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const [showCacheModal, setShowCacheModal] = useState(false);
+  const [versionData, setVersionData] = useState<any>(null);
+
+  useEffect(() => {
+    // Initial load from storage
+    const stored = localStorage.getItem('bantlo_current_version');
+    if (stored) setVersionData(JSON.parse(stored));
+    
+    // Check for fresh version immediately
+    checkVersion().then(() => {
+      const fresh = localStorage.getItem('bantlo_current_version');
+      if (fresh) setVersionData(JSON.parse(fresh));
+    });
+  }, []);
   
   const [newPassword, setNewPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
@@ -119,8 +132,7 @@ export default function Settings() {
           }}
         >
           {(() => {
-            try {
-              const versionData = JSON.parse(localStorage.getItem('bantlo_current_version') || '{}');
+            if (!versionData) return <span style={{ fontWeight: 'bold' }}>SCANNING SYSTEM...</span>;
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -138,9 +150,6 @@ export default function Settings() {
                   )}
                 </div>
               );
-            } catch (e) {
-              return <span style={{ fontWeight: 'bold' }}>VERSION DATA UNAVAILABLE</span>;
-            }
           })()}
         </div>
         {tapCount > 0 && tapCount < 5 && (

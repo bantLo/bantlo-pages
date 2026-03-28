@@ -1,4 +1,4 @@
 {
-  "version": "1.0.10",
-  "message": "UI Fixes"
+  "version": "1.0.11",
+  "message": "implement structured version checking"
 }
