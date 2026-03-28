@@ -183,11 +183,15 @@ export default function Dashboard() {
           <p className="np-text-muted">Create a Group or Add a friend to start splitting bills entirely offline natively!</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="np-grid-desktop">
           
-          {friendGroups.length > 0 && (
-            <div>
-              <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends</p>
+          <div>
+            <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (1-on-1)</p>
+            {friendGroups.length === 0 ? (
+              <div className="np-section" style={{ borderStyle: 'dotted', opacity: 0.5 }}>
+                <p style={{ margin: 0, fontSize: '0.85rem' }}>No friend splits. Add someone by email!</p>
+              </div>
+            ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {friendGroups.map(g => (
                   <Link 
@@ -205,12 +209,16 @@ export default function Dashboard() {
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {normalGroups.length > 0 && (
-            <div>
-              <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Ledger Groups</p>
+          <div>
+            <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Ledger Groups</p>
+            {normalGroups.length === 0 ? (
+              <div className="np-section" style={{ borderStyle: 'dotted', opacity: 0.5 }}>
+                <p style={{ margin: 0, fontSize: '0.85rem' }}>No group ledgers. Click "+ Group" to start one!</p>
+              </div>
+            ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {normalGroups.map(g => (
                   <Link 
@@ -229,8 +237,8 @@ export default function Dashboard() {
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </div>
       )}

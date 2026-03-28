@@ -1,5 +1,5 @@
 -- ==========================================
--- bantLo PostgreSQL Architecture V2.1 (Splitwise Parity Engine)
+-- bantLo PostgreSQL Architecture V2.3 (Splitwise Parity Engine)
 -- Execute this entire block in your Supabase SQL Editor
 -- ==========================================
 

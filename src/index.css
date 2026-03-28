@@ -47,6 +47,12 @@ body {
   padding: 1rem;
 }
 
+@media (min-width: 1024px) {
+  .np-container {
+    max-width: 1100px;
+  }
+}
+
 /* Minimalist Headers */
 .np-title {
   font-size: 2rem;
@@ -136,4 +142,20 @@ body {
 .np-text-muted {
   color: var(--text-secondary);
   font-size: 0.85rem;
+}
+
+/* Responsive Grid System */
+.np-grid-desktop {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .np-grid-desktop {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+  }
 }
