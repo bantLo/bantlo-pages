@@ -235,3 +235,7 @@ CREATE POLICY "Insert splits natively" ON expense_splits FOR INSERT WITH CHECK (
 CREATE POLICY "Update splits natively" ON expense_splits FOR UPDATE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 
 CREATE POLICY "View balances natively" ON balances FOR SELECT USING (is_group_member(group_id));
+
+CREATE POLICY "View settlements natively" ON settlements FOR SELECT USING (is_group_member(group_id));
+CREATE POLICY "Insert settlements natively" ON settlements FOR INSERT WITH CHECK (is_group_member(group_id));
+CREATE POLICY "Delete settlements natively" ON settlements FOR DELETE USING (is_group_member(group_id));

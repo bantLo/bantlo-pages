@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupName, updateExpenseDescription, removeMember, deleteGroup } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupName, updateExpenseDescription, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement } from '../lib/api';
 import AddExpense from '../components/AddExpense';
+import AddSettlement from '../components/AddSettlement';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 
@@ -13,6 +14,11 @@ export default function GroupDetails() {
   const [balances, setBalances] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [expenseCount, setExpenseCount] = useState(0);
+  const [settlements, setSettlements] = useState<any[]>([]);
+  const [showAddSettlement, setShowAddSettlement] = useState(false);
+  
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
@@ -35,15 +41,19 @@ export default function GroupDetails() {
       const gData = await fetchGroupDetails(groupId);
       setGroup(gData);
       
-      const [mData, bData, eData] = await Promise.all([
+      const [mData, bData, eData, sData, countTemp] = await Promise.all([
         fetchGroupMembers(groupId),
         fetchGroupBalances(groupId),
-        fetchRecentExpenses(groupId)
+        fetchRecentExpenses(groupId),
+        fetchRecentSettlements(groupId),
+        fetchExpenseCount(groupId)
       ]);
       
       setMembers(mData);
       setBalances(bData);
       setExpenses(eData);
+      setSettlements(sData);
+      setExpenseCount(countTemp);
     } catch (err) {
       console.error(err);
     } finally {
@@ -55,6 +65,12 @@ export default function GroupDetails() {
     setShowAddExpense(false);
     if (id) loadGroupData(id);
     alert('Expense successfully added!');
+  };
+
+  const handleSettlementSaved = () => {
+    setShowAddSettlement(false);
+    if (id) loadGroupData(id);
+    alert('Payment successfully recorded!');
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -104,6 +120,16 @@ export default function GroupDetails() {
     }
   };
 
+  const handleDeleteSettlement = async (settlementId: string) => {
+    if (!id || !window.confirm('Are you sure? This will delete the payment record and reverse its balance effects.')) return;
+    try {
+      await deleteSettlement(settlementId);
+      loadGroupData(id);
+    } catch(err: any) {
+      alert('Failed to delete settlement: ' + err.message);
+    }
+  };
+
   const handleUpdateGroupName = async () => {
     if (!editGroupName.trim()) return setEditingGroupId(false);
     try {
@@ -139,6 +165,13 @@ export default function GroupDetails() {
 
   return (
     <div className="np-container">
+      {expenseCount >= 300 && (
+        <div className="np-section" style={{ borderStyle: 'solid', borderColor: 'var(--text-danger)', marginBottom: '1.5rem', background: 'rgba(255,50,50,0.1)' }}>
+          <h2 style={{ fontSize: '1.2rem', color: 'var(--text-danger)', marginTop: 0 }}>Limit Exceeded (300+ Logs)</h2>
+          <p style={{ margin: 0, fontSize: '0.9rem' }}>To save server costs and keep bantLo free natively, please <strong>Settle Up</strong> any active balances, create a new Group, and Delete this one. Older transactions may no longer calculate accurately to prevent aggressive looping.</p>
+        </div>
+      )}
+
       <div className="np-flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         {editingGroupId ? (
           <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
@@ -163,10 +196,11 @@ export default function GroupDetails() {
         <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>Currency: {group.currency}</p>
         <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>Members: {members.length}</p>
         
-        {(!showAddExpense && !showAddMember) && (
+        {(!showAddExpense && !showAddMember && !showAddSettlement) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
             <NeoButton variant="primary" onClick={() => setShowAddExpense(true)}>Add Expense</NeoButton>
-            <NeoButton style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }} onClick={() => setShowAddMember(true)}>Add Member</NeoButton>
+            <NeoButton style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }} onClick={() => setShowAddSettlement(true)}>Settle Up</NeoButton>
+            <NeoButton style={{ gridColumn: 'span 2', borderColor: 'var(--text-secondary)', color: 'var(--text-secondary)' }} onClick={() => setShowAddMember(true)}>Invite Member</NeoButton>
           </div>
         )}
       </div>
@@ -201,6 +235,15 @@ export default function GroupDetails() {
           members={members} 
           onComplete={handleExpenseSaved} 
           onCancel={() => setShowAddExpense(false)} 
+        />
+      )}
+
+      {showAddSettlement && (
+        <AddSettlement 
+          groupId={group.id} 
+          members={members} 
+          onComplete={handleSettlementSaved} 
+          onCancel={() => setShowAddSettlement(false)} 
         />
       )}
 
@@ -290,6 +333,39 @@ export default function GroupDetails() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="np-section" style={{ borderStyle: 'dashed' }}>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>Settlements</h2>
+        {settlements.length === 0 ? (
+          <p className="np-text-muted" style={{ textAlign: 'center' }}>No settlements yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {settlements.map((s: any) => {
+              const fromName = members.find(m => m.user_id === s.from_user_id)?.profiles?.display_name || 'Someone';
+              const toName = members.find(m => m.user_id === s.to_user_id)?.profiles?.display_name || 'Someone';
+              
+              return (
+                <div key={s.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
+                    <span style={{ fontWeight: 'bold' }}>{fromName} paid {toName}</span>
+                    <span className="np-text-muted" style={{ fontSize: '0.8rem' }}>
+                      {new Date(s.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontWeight: 'bold', color: 'var(--text-accent)', marginRight: '0.5rem' }}>
+                      {group.currency} {Number(s.amount).toFixed(2)}
+                    </span>
+                    <button onClick={() => handleDeleteSettlement(s.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} title="Delete Settlement">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

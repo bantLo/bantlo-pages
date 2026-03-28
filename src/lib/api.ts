@@ -172,3 +172,28 @@ export async function removeMember(groupId: string, userId: string) {
   const { error } = await supabase.from('group_members').delete().match({ group_id: groupId, user_id: userId });
   if (error) throw error;
 }
+
+export async function fetchExpenseCount(groupId: string) {
+  const { count, error } = await supabase
+    .from('expenses')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId);
+  if (error) throw error;
+  return count || 0;
+}
+
+export async function fetchRecentSettlements(groupId: string) {
+  const { data, error } = await supabase
+    .from('settlements')
+    .select('id, amount, from_user_id, to_user_id, created_at')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function deleteSettlement(settlementId: string) {
+  const { error } = await supabase.from('settlements').delete().eq('id', settlementId);
+  if (error) throw error;
+}
