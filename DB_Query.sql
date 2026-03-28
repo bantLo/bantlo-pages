@@ -1,5 +1,5 @@
 -- ==========================================
--- bantLo PostgreSQL Architecture V2 (Splitwise Parity Engine)
+-- bantLo PostgreSQL Architecture V2.1 (Splitwise Parity Engine)
 -- Execute this entire block in your Supabase SQL Editor
 -- ==========================================
 
@@ -86,7 +86,7 @@ BEGIN
   ON CONFLICT DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_init_user_balance ON group_members;
 CREATE TRIGGER trg_init_user_balance
@@ -110,7 +110,7 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_payment_balance ON expense_payments;
 CREATE TRIGGER trg_payment_balance
@@ -134,7 +134,7 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_split_balance ON expense_splits;
 CREATE TRIGGER trg_split_balance
@@ -263,6 +263,9 @@ CREATE POLICY "Insert groups natively" ON groups FOR INSERT WITH CHECK (auth.uid
 CREATE POLICY "Update groups natively" ON groups FOR UPDATE USING (is_group_member(id));
 
 CREATE POLICY "View memberships natively" ON group_members FOR SELECT USING (is_group_member(group_id) OR user_id = auth.uid());
+CREATE POLICY "Insert memberships natively" ON group_members FOR INSERT WITH CHECK (auth.uid() = user_id OR EXISTS (SELECT 1 FROM groups WHERE id = group_id AND created_by = auth.uid()));
+CREATE POLICY "Delete memberships natively" ON group_members FOR DELETE USING (auth.uid() = user_id OR EXISTS (SELECT 1 FROM groups WHERE id = group_id AND created_by = auth.uid()));
+
 CREATE POLICY "View expenses natively" ON expenses FOR SELECT USING (is_group_member(group_id));
 CREATE POLICY "Insert expenses natively" ON expenses FOR INSERT WITH CHECK (is_group_member(group_id));
 CREATE POLICY "Delete expenses natively" ON expenses FOR DELETE USING (is_group_member(group_id));

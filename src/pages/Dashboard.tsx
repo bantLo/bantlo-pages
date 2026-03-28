@@ -43,9 +43,9 @@ export default function Dashboard() {
       setNewGroupName('');
       setShowCreate(false);
       loadGroups(); // Refresh list
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Error creating group. Ensure your Supabase schema is correct/running.');
+      alert('Error creating group: ' + (error.message || 'Check database connection'));
     }
   };
 
