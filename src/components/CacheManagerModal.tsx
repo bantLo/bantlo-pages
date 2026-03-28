@@ -70,7 +70,7 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
           </NeoButton>
           
           <NeoButton type="button" variant="danger" onClick={handleClearBoth}>
-            Nuke Everything (Fix All)
+            Everything (Fix All)
           </NeoButton>
           
           <button 
