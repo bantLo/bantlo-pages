@@ -1,0 +1,133 @@
+import { supabase } from './supabase';
+
+import { getDB } from './db';
+
+// Fetch groups a user is part of
+export async function fetchUserGroups(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('group_members')
+      .select(`
+        group_id,
+        groups (
+          id,
+          name,
+          currency,
+          updated_at
+        )
+      `)
+      .eq('user_id', userId);
+      
+    if (error) throw error;
+    
+    const validGroups = data.map((membership: any) => membership.groups).filter(Boolean);
+    
+    // Cache successfully fetched groups to IndexedDB
+    const db = await getDB();
+    const tx = db.transaction('groups', 'readwrite');
+    validGroups.forEach(g => tx.store.put(g));
+    await tx.done;
+
+    return validGroups;
+  } catch (error) {
+    if (!navigator.onLine) {
+      console.warn('Offline mode: serving cached groups');
+      const db = await getDB();
+      return await db.getAll('groups');
+    }
+    throw error;
+  }
+}
+
+// Create a new group and automatically add the creator as the first member
+export async function createGroup(userId: string, name: string, currency: string = 'USD') {
+  const { data: groupData, error: groupError } = await supabase
+    .from('groups')
+    .insert([{ name, currency, created_by: userId }])
+    .select()
+    .single();
+
+  if (groupError) throw groupError;
+
+  const { error: memberError } = await supabase
+    .from('group_members')
+    .insert([{ group_id: groupData.id, user_id: userId }]);
+
+  if (memberError) throw memberError;
+
+  return groupData;
+}
+
+// Fetch a single group by ID
+export async function fetchGroupDetails(groupId: string) {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('*')
+    .eq('id', groupId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Fetch members of a group
+export async function fetchGroupMembers(groupId: string) {
+  const { data, error } = await supabase
+    .from('group_members')
+    .select(`
+      user_id,
+      auth:user_id ( email ) 
+    `)
+    .eq('group_id', groupId);
+
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchGroupBalances(groupId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('balances')
+      .select('user_id, balance, auth:user_id(email)')
+      .eq('group_id', groupId);
+
+    if (error) throw error;
+    
+    const db = await getDB();
+    await db.put('balances', { group_id: groupId, balances: data as any[], updated_at: new Date().toISOString() });
+    return data;
+  } catch (error) {
+    if (!navigator.onLine) {
+      const db = await getDB();
+      const cached = await db.get('balances', groupId);
+      return cached ? cached.balances : [];
+    }
+    console.error('Failed fetching balances:', error);
+    return [];
+  }
+}
+
+export async function fetchRecentExpenses(groupId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('id, description, amount, paid_by, created_at')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+    
+    const db = await getDB();
+    await db.put('expenses', { group_id: groupId, expenses: data as any[], updated_at: new Date().toISOString() });
+    return data;
+  } catch (error) {
+    if (!navigator.onLine) {
+      const db = await getDB();
+      const cached = await db.get('expenses', groupId);
+      return cached ? cached.expenses : [];
+    }
+    console.error('Failed fetching expenses:', error);
+    return [];
+  }
+}

@@ -1,0 +1,131 @@
+/* NeoPop Pitch-Black Design System */
+
+:root {
+  /* Colors */
+  --bg-dark: #000000;
+  --bg-surface: #111111;
+  --bg-surface-elevated: #1a1a1a;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #888888;
+  --text-accent: #00ff66;
+  --text-danger: #ff3366;
+  
+  /* NeoPop specific borders and shadows */
+  --border-width: 2px;
+  --border-color: #333333;
+  --border-color-active: #ffffff;
+  
+  --shadow-neopop: 0px 4px 0px 0px #333333;
+  --shadow-neopop-active: 0px 0px 0px 0px #333333;
+  
+  /* Utilities */
+  --radius-none: 0px;
+  --transition-fast: 0.1s ease-in-out;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Base UI Elements */
+
+.np-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Minimalist Headers */
+.np-title {
+  font-size: 2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+  border-bottom: var(--border-width) solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Brutalist Sections */
+.np-section {
+  background-color: var(--bg-surface);
+  border: var(--border-width) solid var(--border-color);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* NeoPop Buttons */
+.np-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: var(--border-width) solid var(--border-color);
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: var(--shadow-neopop);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.np-button:hover, 
+.np-button:focus {
+  border-color: var(--border-color-active);
+  outline: none;
+}
+
+.np-button:active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-neopop-active);
+}
+
+.np-button-primary {
+  background-color: var(--text-primary);
+  color: var(--bg-dark);
+  border-color: var(--text-primary);
+  box-shadow: 0px 4px 0px 0px var(--text-secondary);
+}
+
+.np-button-primary:hover {
+  border-color: var(--text-secondary);
+}
+
+.np-button-danger {
+  color: var(--text-danger);
+  border-color: var(--text-danger);
+  box-shadow: 0px 4px 0px 0px var(--text-danger);
+}
+
+.np-button-danger:hover {
+  background-color: rgba(255, 51, 102, 0.1);
+}
+
+/* Layout Utilities */
+.np-flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.np-text-muted {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
