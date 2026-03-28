@@ -61,7 +61,11 @@ export async function createGroup(userId: string, name: string, currency: string
     .from('group_members')
     .insert([{ group_id: groupData.id, user_id: userId }]);
 
-  if (memberError) throw memberError;
+  if (memberError) {
+    // Attempt cleanup to prevent dangling groups that aren't visible to anyone
+    await supabase.from('groups').delete().eq('id', groupData.id);
+    throw memberError;
+  }
 
   return groupData;
 }

@@ -261,6 +261,7 @@ CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.
 CREATE POLICY "View groups natively" ON groups FOR SELECT USING (is_group_member(id) OR created_by = auth.uid());
 CREATE POLICY "Insert groups natively" ON groups FOR INSERT WITH CHECK (auth.uid() = created_by);
 CREATE POLICY "Update groups natively" ON groups FOR UPDATE USING (is_group_member(id));
+CREATE POLICY "Delete groups natively" ON groups FOR DELETE USING (created_by = auth.uid());
 
 CREATE POLICY "View memberships natively" ON group_members FOR SELECT USING (is_group_member(group_id) OR user_id = auth.uid());
 CREATE POLICY "Insert memberships natively" ON group_members FOR INSERT WITH CHECK (auth.uid() = user_id OR EXISTS (SELECT 1 FROM groups WHERE id = group_id AND created_by = auth.uid()));
@@ -274,6 +275,7 @@ CREATE POLICY "Update expenses natively" ON expenses FOR UPDATE USING (is_group_
 CREATE POLICY "View splits natively" ON expense_splits FOR SELECT USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Insert splits natively" ON expense_splits FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Update splits natively" ON expense_splits FOR UPDATE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
+CREATE POLICY "Delete splits natively" ON expense_splits FOR DELETE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 
 CREATE POLICY "View payments natively" ON expense_payments FOR SELECT USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Insert payments natively" ON expense_payments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
