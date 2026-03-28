@@ -1,5 +1,5 @@
 -- ==========================================
--- bantLo PostgreSQL Architecture
+-- bantLo PostgreSQL Architecture V2 (Splitwise Parity Engine)
 -- Execute this entire block in your Supabase SQL Editor
 -- ==========================================
 
@@ -179,7 +179,7 @@ CREATE TRIGGER on_auth_user_updated
   FOR EACH ROW EXECUTE FUNCTION public.handle_user_update();
 
 -- ==========================================
--- 3. Row Level Security Overrides
+-- 3. Row Level Security Overrides & RPCs
 -- ==========================================
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
