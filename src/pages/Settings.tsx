@@ -104,25 +104,48 @@ export default function Settings() {
       </div>
       
       <div className="np-section" style={{ textAlign: 'center', borderColor: 'var(--border-color)', borderStyle: 'dashed' }}>
-        <p className="np-text-muted" style={{ marginBottom: '0.5rem' }}>App Version</p>
+        <p className="np-text-muted" style={{ marginBottom: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>System Version</p>
         <div 
           onClick={handleVersionTap}
           style={{ 
             display: 'inline-block',
-            padding: '0.5rem 1rem', 
+            padding: '1rem', 
             background: 'var(--bg-dark)', 
             border: '2px solid var(--border-color)',
             cursor: 'pointer',
             userSelect: 'none',
-            fontWeight: 'bold',
-            letterSpacing: '2px'
+            textAlign: 'left',
+            width: '100%'
           }}
         >
-          v1.0.0
+          {(() => {
+            try {
+              const versionData = JSON.parse(localStorage.getItem('bantlo_current_version') || '{}');
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '900', fontSize: '1.2rem', color: 'var(--text-accent)' }}>
+                      v{versionData.version || '0.0.0'}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
+                      TAP 5X TO FORCE SYNC
+                    </span>
+                  </div>
+                  {versionData.message && (
+                    <p style={{ fontSize: '0.8rem', margin: 0, borderTop: '1px solid #333', paddingTop: '0.5rem', lineHeight: '1.4' }}>
+                      {versionData.message}
+                    </p>
+                  )}
+                </div>
+              );
+            } catch (e) {
+              return <span style={{ fontWeight: 'bold' }}>VERSION DATA UNAVAILABLE</span>;
+            }
+          })()}
         </div>
         {tapCount > 0 && tapCount < 5 && (
-          <p className="np-text-muted" style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-accent)' }}>
-            {5 - tapCount} more taps to force update
+          <p className="np-text-muted" style={{ fontSize: '0.75rem', marginTop: '0.75rem', color: 'var(--text-accent)' }}>
+             {5 - tapCount} more taps to trigger local cache wipe!
           </p>
         )}
       </div>
