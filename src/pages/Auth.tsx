@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function Auth() {
@@ -7,6 +8,13 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
+  const [isPWA, setIsPWA] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      setIsPWA(true);
+    }
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +39,14 @@ export default function Auth() {
 
   return (
     <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', justifyContent: 'center' }}>
-      <h1 className="np-title" style={{ textAlign: 'center', border: 'none', marginBottom: '2rem' }}>bantLo</h1>
+      
+      {!isPWA && (
+        <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
+          <Link to="/" className="np-button" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>← Back</Link>
+        </div>
+      )}
+
+      <h1 className="np-title" style={{ textAlign: 'center', border: 'none', marginBottom: '2rem', marginTop: !isPWA ? '3rem' : '0' }}>bantLo</h1>
       
       <div className="np-section" style={{ boxShadow: 'var(--shadow-neopop)' }}>
         <h2 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', textTransform: 'uppercase' }}>

@@ -27,7 +27,7 @@ export default function Settings() {
     <div className="np-container">
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <h1 className="np-title" style={{ margin: 0 }}>Settings</h1>
-        <Link to="/" className="np-button">Back</Link>
+        <Link to="/dashboard" className="np-button">Back</Link>
       </div>
 
       <div className="np-section">

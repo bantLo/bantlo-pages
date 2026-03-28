@@ -13,10 +13,16 @@ import LandingPage from './pages/Landing';
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPWA, setIsPWA] = useState(false);
 
   useVersionChecker();
 
   useEffect(() => {
+    // Detect if app is running in standard PWA standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      setIsPWA(true);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -42,7 +48,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={!session ? <LandingPage /> : <Navigate to="/dashboard" />} />
+        {/* If installed as PWA and not logged in, force to Auth. Otherwise Landing Page. Logged in always goes to Dashboard. */}
+        <Route path="/" element={!session ? (isPWA ? <Navigate to="/auth" /> : <LandingPage />) : <Navigate to="/dashboard" />} />
+        
         <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/dashboard" />} />
         
         {/* Protected Dashboard Routes */}
