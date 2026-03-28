@@ -48,10 +48,10 @@ The application source code.
 
 #### `src/pages/`
 - **`Landing.tsx`**: Public marketing page. Responsive CSS grids provide distinct views for Desktop (Dashboard CTA) and Mobile (`beforeinstallprompt` PWA installation trigger).
-- **`Auth.tsx`**: Universal Login/Signup interface mapping strictly to Supabase GoTrue.
+- **`Auth.tsx`**: Universal multi-state authentication interface (`login` | `signup` | `forgot_password`) mapping strictly to Supabase GoTrue. Natively handles Magic Link dispatch callbacks and success/error bubbling.
 - **`Dashboard.tsx`**: Protected root view (`/dashboard`). Lists a user's associated Groups and captures Group Creation interactions.
 - **`GroupDetails.tsx`**: Protected internal group view (`/groups/:id`). Pulls arrays from `api.ts` to strictly display absolute Net Balances (who genuinely owes whom overall) and chronological Expenses.
-- **`Settings.tsx`**: Minimal profile view housing the Logout function and a hidden **"5-tap Easter Egg"** mechanism that wipes all local browser caches forcefully for emergency debugging.
+- **`Settings.tsx`**: The user control nexus. Houses the Logout architecture, an active `updateUser()` password-rotation block, and a hidden **"5-tap Easter Egg"** mechanism that wipes all local browser caches forcefully for emergency debugging.
 
 ---
 

@@ -11,6 +11,9 @@ export default function Settings() {
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const [showCacheModal, setShowCacheModal] = useState(false);
+  
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
 
   const handleVersionTap = () => {
     const newCount = tapCount + 1;
@@ -32,6 +35,20 @@ export default function Settings() {
     await supabase.auth.signOut();
     indexedDB.deleteDatabase('bantlo-data-cache-v1'); // Completely wipe PWA DB cache purely on logout
     navigate('/');
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordMsg('Password must be at least 6 characters.');
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setPasswordMsg(error.message);
+    } else {
+      setPasswordMsg('Password instantly updated!');
+      setNewPassword('');
+    }
   };
 
   return (
@@ -89,6 +106,28 @@ export default function Settings() {
         {tapCount > 0 && tapCount < 5 && (
           <p className="np-text-muted" style={{ fontSize: '0.75rem', marginTop: '0.5rem', color: 'var(--text-accent)' }}>
             {5 - tapCount} more taps to force update
+          </p>
+        )}
+      </div>
+
+      <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '1.5rem' }}>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Security</p>
+        <input 
+          type="password" 
+          value={newPassword}
+          onChange={e => {
+            setNewPassword(e.target.value);
+            setPasswordMsg('');
+          }}
+          placeholder="Enter new password..." 
+          style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }}
+        />
+        <NeoButton style={{ width: '100%', borderColor: 'var(--text-secondary)' }} onClick={handleUpdatePassword}>
+          Update Password
+        </NeoButton>
+        {passwordMsg && (
+          <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: passwordMsg.includes('updated') ? 'var(--text-accent)' : 'var(--text-danger)' }}>
+            {passwordMsg}
           </p>
         )}
       </div>
