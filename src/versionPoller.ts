@@ -10,10 +10,24 @@ export async function checkVersion() {
     
     const latestData = await response.json();
     const storedString = localStorage.getItem(APP_VERSION_KEY);
-    const currentData = storedString ? JSON.parse(storedString) : null;
+    
+    let currentData = null;
+    try {
+      if (storedString) {
+        // If it starts with '{', it's our new JSON format
+        if (storedString.trim().startsWith('{')) {
+          currentData = JSON.parse(storedString);
+        } else {
+          // Legacy plain-string version (e.g. "1.0.8")
+          currentData = { version: storedString };
+        }
+      }
+    } catch (e) {
+      console.warn('[Version Poller] Stale format detected, resetting...');
+    }
     
     // First load or missing data
-    if (!currentData) {
+    if (!currentData || !currentData.version) {
       localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
       return;
     }

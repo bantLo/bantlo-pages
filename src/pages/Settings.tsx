@@ -14,14 +14,24 @@ export default function Settings() {
   const [versionData, setVersionData] = useState<any>(null);
 
   useEffect(() => {
+    const parse = (str: string | null) => {
+      if (!str) return null;
+      try {
+        if (str.trim().startsWith('{')) return JSON.parse(str);
+        return { version: str }; // Legacy format handling
+      } catch (e) {
+        return { version: '1.0.8' }; // Baseline fallback
+      }
+    };
+
     // Initial load from storage
     const stored = localStorage.getItem('bantlo_current_version');
-    if (stored) setVersionData(JSON.parse(stored));
+    setVersionData(parse(stored));
     
     // Check for fresh version immediately
     checkVersion().then(() => {
       const fresh = localStorage.getItem('bantlo_current_version');
-      if (fresh) setVersionData(JSON.parse(fresh));
+      setVersionData(parse(fresh));
     });
   }, []);
   
