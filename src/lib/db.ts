@@ -35,9 +35,27 @@ export function getDB() {
         db.createObjectStore('expenses', { keyPath: 'group_id' });
         db.createObjectStore('mutations', { keyPath: 'id', autoIncrement: true });
       },
+      blocked() {
+        console.warn('IDB Connection Blocked: Retrying...');
+      },
+      terminated() {
+        console.error('IDB Connection Terminated.');
+        dbPromise = null;
+      }
     });
   }
   return dbPromise;
+}
+
+export function resetDatabasePromise() {
+  dbPromise = null;
+}
+
+export async function clearLocalDatabase() {
+  const db = await getDB();
+  db.close(); // Important: Close the active connection first
+  resetDatabasePromise();
+  await indexedDB.deleteDatabase('bantlo-data-cache-v1');
 }
 
 export async function cacheGroupData(group: any) {

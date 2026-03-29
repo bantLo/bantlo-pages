@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { forceCacheUpdate, checkVersion } from '../versionPoller';
 import { deleteAccount } from '../lib/api';
+import { clearLocalDatabase } from '../lib/db';
 import BackButton from '../components/BackButton';
 import { useNavigate } from 'react-router-dom';
 import NeoButton from '../components/NeoButton';
@@ -77,8 +78,8 @@ export default function Settings() {
   const handleLogout = async () => {
     localStorage.removeItem('bantlo_post_login_redirect');
     await supabase.auth.signOut();
-    indexedDB.deleteDatabase('bantlo-data-cache-v1');
-    navigate('/');
+    await clearLocalDatabase();
+    window.location.assign('/');
   };
 
   const handleDeleteAccount = async () => {

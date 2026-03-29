@@ -98,15 +98,20 @@ CREATE OR REPLACE FUNCTION update_balance_on_payment() RETURNS TRIGGER AS $$
 DECLARE
   v_group_id UUID;
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
-    UPDATE balances SET balance = balance + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
-  ELSIF TG_OP = 'DELETE' THEN
+  IF TG_OP = 'DELETE' THEN
     SELECT group_id INTO v_group_id FROM expenses WHERE id = OLD.expense_id;
-    UPDATE balances SET balance = balance - OLD.amount_paid WHERE group_id = v_group_id AND user_id = OLD.user_id;
-  ELSIF TG_OP = 'UPDATE' THEN
+  ELSE
     SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
-    UPDATE balances SET balance = balance - OLD.amount_paid + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
+  END IF;
+
+  IF v_group_id IS NOT NULL THEN
+    IF TG_OP = 'INSERT' THEN
+      UPDATE balances SET balance = balance + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
+    ELSIF TG_OP = 'DELETE' THEN
+      UPDATE balances SET balance = balance - OLD.amount_paid WHERE group_id = v_group_id AND user_id = OLD.user_id;
+    ELSIF TG_OP = 'UPDATE' THEN
+      UPDATE balances SET balance = balance - OLD.amount_paid + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
+    END IF;
   END IF;
   RETURN NULL;
 END;
@@ -122,15 +127,20 @@ CREATE OR REPLACE FUNCTION update_balance_on_split() RETURNS TRIGGER AS $$
 DECLARE
   v_group_id UUID;
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
-    UPDATE balances SET balance = balance - NEW.amount_owed WHERE group_id = v_group_id AND user_id = NEW.user_id;
-  ELSIF TG_OP = 'DELETE' THEN
+  IF TG_OP = 'DELETE' THEN
     SELECT group_id INTO v_group_id FROM expenses WHERE id = OLD.expense_id;
-    UPDATE balances SET balance = balance + OLD.amount_owed WHERE group_id = v_group_id AND user_id = OLD.user_id;
-  ELSIF TG_OP = 'UPDATE' THEN
+  ELSE
     SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
-    UPDATE balances SET balance = balance + OLD.amount_owed - NEW.amount_owed WHERE group_id = v_group_id AND user_id = NEW.user_id;
+  END IF;
+
+  IF v_group_id IS NOT NULL THEN
+    IF TG_OP = 'INSERT' THEN
+      UPDATE balances SET balance = balance - NEW.amount_owed WHERE group_id = v_group_id AND user_id = NEW.user_id;
+    ELSIF TG_OP = 'DELETE' THEN
+      UPDATE balances SET balance = balance + OLD.amount_owed WHERE group_id = v_group_id AND user_id = OLD.user_id;
+    ELSIF TG_OP = 'UPDATE' THEN
+      UPDATE balances SET balance = balance + OLD.amount_owed - NEW.amount_owed WHERE group_id = v_group_id AND user_id = NEW.user_id;
+    END IF;
   END IF;
   RETURN NULL;
 END;
@@ -369,3 +379,28 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- NEW: Trigger to handle recursive balance reversal BEFORE an expense is cascadingly deleted.
+-- This ensures v_group_id is available during the removal of an entire expense parent.
+CREATE OR REPLACE FUNCTION reverse_balance_before_expense_delete() RETURNS TRIGGER AS $$
+BEGIN
+  -- 1. Reverse all payments funded by users for this expense
+  UPDATE balances b
+  SET balance = b.balance - p.amount_paid
+  FROM expense_payments p
+  WHERE p.expense_id = OLD.id AND b.group_id = OLD.group_id AND b.user_id = p.user_id;
+
+  -- 2. Reverse all splits owed by users for this expense
+  UPDATE balances b
+  SET balance = b.balance + s.amount_owed
+  FROM expense_splits s
+  WHERE s.expense_id = OLD.id AND b.group_id = OLD.group_id AND b.user_id = s.user_id;
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_reverse_balance_before_delete ON expenses;
+CREATE TRIGGER trg_reverse_balance_before_delete
+BEFORE DELETE ON expenses
+FOR EACH ROW EXECUTE FUNCTION reverse_balance_before_expense_delete();

@@ -1,5 +1,5 @@
-
 import NeoButton from './NeoButton';
+import { clearLocalDatabase } from '../lib/db';
 
 interface CacheManagerModalProps {
   isOpen: boolean;
@@ -21,16 +21,16 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
     }
   };
 
-  const handleClearDB = () => {
-    indexedDB.deleteDatabase('bantlo-data-cache-v1');
+  const handleClearDB = async () => {
+    await clearLocalDatabase();
     localStorage.clear();
     sessionStorage.clear();
     alert('Offline database cleared! Reloading...');
-    window.location.reload();
+    window.location.assign('/');
   };
 
   const handleClearBoth = async () => {
-    indexedDB.deleteDatabase('bantlo-data-cache-v1');
+    await clearLocalDatabase();
     localStorage.clear();
     sessionStorage.clear();
     
@@ -43,7 +43,7 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
       navigator.serviceWorker.controller.postMessage({ type: 'FORCE_UPDATE' });
     } else {
       alert('All caches completely wiped! Reloading fresh...');
-      window.location.reload();
+      window.location.assign('/');
     }
   };
 
