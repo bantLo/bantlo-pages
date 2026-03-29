@@ -68,6 +68,14 @@ export default function LandingPage() {
             .desktop-only { display: flex; }
             .mobile-only { display: none; }
           }
+
+          .trademark-disclaimer {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-top: 1rem;
+            line-height: 1.4;
+            max-width: 800px;
+          }
         `}
       </style>
 
@@ -95,12 +103,12 @@ export default function LandingPage() {
         {/* Left/Top Content */}
         <div style={{ flex: 1 }}>
           <h2 style={{ fontSize: '3.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1, marginBottom: '1.5rem' }}>
-            Split Offline. <br/>
-            <span style={{ color: 'var(--text-accent)' }}>Sync Later.</span>
+            The <span style={{ color: 'var(--text-accent)' }}>Free</span> Split-Engine. <br/>
+            <span style={{ color: 'var(--text-secondary)' }}>Sync Later.</span>
           </h2>
           
           <p className="np-text-muted" style={{ fontSize: '1.25rem', marginBottom: '2.5rem', maxWidth: '500px' }}>
-            The brutalist, offline-first expense manager that doesn't hold your money hostage when the network drops. Engineered for precision sharing.
+            A brutalist, offline-first alternative to Splitwise. Engineered for precision sharing without the "Pro" subscription baggage.
           </p>
 
           <div className="np-section" style={{ borderStyle: 'solid', padding: '1.5rem', marginBottom: '2.5rem', maxWidth: '500px' }}>
@@ -147,8 +155,8 @@ export default function LandingPage() {
             </div>
             
             <div style={{ padding: '1.5rem', border: '2px dashed var(--border-color)', background: 'var(--bg-surface)' }}>
-              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Mathematical Debt Simplification</h4>
-              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>bantLo natively calculates a "Greedy Matrix" in the background. Instead of raw balances, we tell you exactly who must pay whom to achieve 0.00 balances instantly.</p>
+              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Advanced Split Logic (Free)</h4>
+              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>bantLo natively handles Multi-Payer splits and Exact Shares for free. No subscriptions, no limits, just math.</p>
             </div>
 
             <div style={{ padding: '1.5rem', border: '2px solid var(--border-color)', background: 'var(--bg-surface)' }}>
@@ -209,16 +217,22 @@ export default function LandingPage() {
         </div>
       </div>
     <footer style={{ backgroundColor: 'var(--bg-dark)', borderTop: '2px solid var(--border-color)', padding: '3rem 0' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6 }}>
-          <p style={{ fontSize: '0.8rem' }}>© 2026 bantLo Protocol</p>
-          <div style={{ display: 'flex', gap: '2rem', fontSize: '0.8rem', alignItems: 'center' }}>
-            <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>bantlo.expenses@gmail.com</span>
-            <a href="/about" style={{ color: 'inherit', textDecoration: 'none' }}>About</a>
-            <a href="https://github.com/orgs/bantLo/repositories" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Source (GitHub)</a>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.8rem' }}>© 2026 bantLo org</p>
+            <div style={{ display: 'flex', gap: '2rem', fontSize: '0.8rem', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>bantlo.expenses@gmail.com</span>
+              <a href="/about" style={{ color: 'inherit', textDecoration: 'none' }}>About</a>
+              <a href="https://github.com/orgs/bantLo/repositories" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Source (GitHub)</a>
+            </div>
           </div>
+          <p className="trademark-disclaimer">
+            Splitwise is a trademark of Splitwise, Inc. bantLo is an independent org and is not affiliated with, sponsored by, or endorsed by Splitwise, Inc. All mathematical algorithms are proprietary implementations of the bantLo engine.
+          </p>
         </div>
       </footer>
     </div>
   );
 }
+
 

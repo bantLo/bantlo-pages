@@ -249,6 +249,9 @@ export default function Settings() {
         <NeoButton style={{ width: '100%', borderColor: 'var(--text-secondary)' }} onClick={() => setShowCacheModal(true)}>
           Troubleshoot App Cache
         </NeoButton>
+        <p className="np-text-muted" style={{ fontSize: '0.7rem', marginTop: '0.75rem', textAlign: 'center' }}>
+          Tip: If facing UI sync issues, try signing out and logging back in to reset the secure session.
+        </p>
       </div>
 
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>

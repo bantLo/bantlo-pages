@@ -27,7 +27,7 @@ export default function About() {
 
       <div style={{ flex: 1, maxWidth: '800px', margin: '0 auto', width: '100%' }}>
         <h2 style={{ fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '2rem', lineHeight: 1 }}>
-          The <span style={{ color: 'var(--text-accent)' }}>bantLo</span> Protocol
+          The <span style={{ color: 'var(--text-accent)' }}>bantLo</span> org
         </h2>
 
         <div className="np-section" style={{ marginBottom: '2rem' }}>
@@ -66,7 +66,7 @@ export default function About() {
         </div>
 
         <div style={{ marginTop: '3rem', textAlign: 'center', paddingBottom: '3rem' }}>
-          <p className="np-text-muted" style={{ fontSize: '0.75rem', marginBottom: '1.5rem' }}>© 2026 bantLo Protocol. All Rights Reserved.</p>
+          <p className="np-text-muted" style={{ fontSize: '0.75rem', marginBottom: '1.5rem' }}>© 2026 bantLo org. All Rights Reserved.</p>
           <NeoButton variant="default" onClick={() => navigate('/')}>Back to Gateway</NeoButton>
         </div>
       </div>

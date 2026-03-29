@@ -45,15 +45,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for version.info to ensure we always try to get the latest version if asked
-  if (url.pathname === '/version.info') {
+  // 1. NETWORK-ONLY / NETWORK-FIRST for dynamic or frequent-update paths
+  // Gateway pages should never be stale (Landing, Auth, About)
+  const isGateway = url.pathname === '/' || url.pathname === '/auth' || url.pathname === '/about';
+  const isVersion = url.pathname === '/version.info';
+
+  if (isGateway || isVersion) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).then((response) => {
-        // Clone and save it to shell cache too just in case
-        const resClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
-        return response;
-      }).catch(() => {
+      fetch(event.request, { cache: 'no-store' }).catch(() => {
+        // Only return cached version if offline
         return caches.match(event.request);
       })
     );

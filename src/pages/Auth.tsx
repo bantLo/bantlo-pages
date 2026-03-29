@@ -41,6 +41,9 @@ export default function Auth() {
       if (viewState === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
+        // Hard refresh on login to ensure UI shell is fresh
+        window.location.assign('/dashboard');
+        return; 
       } else if (viewState === 'signup') {
         if (!name.trim()) throw new Error('Please enter your full name.');
         if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
