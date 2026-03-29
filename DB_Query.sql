@@ -290,10 +290,25 @@ CREATE POLICY "View settlements natively" ON settlements FOR SELECT USING (is_gr
 CREATE POLICY "Insert settlements natively" ON settlements FOR INSERT WITH CHECK (is_group_member(group_id));
 CREATE POLICY "Delete settlements natively" ON settlements FOR DELETE USING (is_group_member(group_id));
 
--- ==========================================
--- 4. BANTLO MIGRATION V2.4 (Repair & Solder)
--- ==========================================
+CREATE TABLE IF NOT EXISTS group_invites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
+  inviter_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (now() + interval '24 hours')
+);
 
+ALTER TABLE group_invites ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view invite metadata" 
+ON group_invites FOR SELECT 
+USING (expires_at > now());
+
+CREATE POLICY "Members can create invites" 
+ON group_invites FOR INSERT 
+WITH CHECK (is_group_member(group_id));
+
+-- BANTLO MIGRATION V2.4 (Plus Invite Engine)
 -- 1. REPAIR: Ensure every auth.user has a matching public.profile row
 -- This prevents the foreign key updates from failing due to orphaned users.
 INSERT INTO public.profiles (id, email)

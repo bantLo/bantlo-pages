@@ -9,6 +9,7 @@ import Settings from './pages/Settings';
 import Auth from './pages/Auth';
 
 import LandingPage from './pages/Landing';
+import JoinGroup from './pages/JoinGroup';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -51,12 +52,21 @@ function App() {
         {/* If installed as PWA and not logged in, force to Auth. Otherwise Landing Page. Logged in always goes to Dashboard. */}
         <Route path="/" element={!session ? (isPWA ? <Navigate to="/auth" /> : <LandingPage />) : <Navigate to="/dashboard" />} />
         
-        <Route path="/auth" element={!session ? <Auth /> : <Navigate to="/dashboard" />} />
+        <Route path="/auth" element={!session ? <Auth /> : (
+          localStorage.getItem('bantlo_post_login_redirect') ? (
+            (() => {
+              const url = localStorage.getItem('bantlo_post_login_redirect')!;
+              localStorage.removeItem('bantlo_post_login_redirect');
+              return <Navigate to={url} />;
+            })()
+          ) : <Navigate to="/dashboard" />
+        )} />
         
         {/* Protected Dashboard Routes */}
         <Route path="/dashboard" element={session ? <Dashboard /> : <Navigate to="/auth" />} />
         <Route path="/groups/:id" element={session ? <GroupDetails /> : <Navigate to="/auth" />} />
         <Route path="/settings" element={session ? <Settings /> : <Navigate to="/auth" />} />
+        <Route path="/join/:inviteId" element={<JoinGroup />} />
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

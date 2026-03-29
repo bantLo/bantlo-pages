@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement, createGroupInvite } from '../lib/api';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
 import BackButton from '../components/BackButton';
@@ -31,6 +31,7 @@ export default function GroupDetails() {
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');
   const [quickSettle, setQuickSettle] = useState<{from: string, to: string} | null>(null);
+  const [inviteLink, setInviteLink] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -106,6 +107,13 @@ export default function GroupDetails() {
 
   const handleRemoveMember = async (userId: string) => {
     const isLast = members.length === 1;
+    const balance = balances.find(b => b.user_id === userId)?.balance || 0;
+    
+    if (!isLast && Math.abs(Number(balance)) > 0.01) {
+      alert(`Cannot remove/leave. This user has an active balance of ${group.currency} ${Number(balance).toFixed(2)}. All debts must be settled (exactly 0.00) first.`);
+      return;
+    }
+
     const msg = isLast 
       ? 'WARNING: You are the last member. Leaving will permanently DELETE this group and all its data. Proceed?'
       : 'Remove this member from the group?';
@@ -122,6 +130,18 @@ export default function GroupDetails() {
       }
     } catch(err: any) {
       alert('Action failed: ' + err.message);
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    try {
+      const invite = await createGroupInvite(id!);
+      const link = `${window.location.origin}/join/${invite.id}`;
+      setInviteLink(link);
+      navigator.clipboard.writeText(link);
+      alert('Invite link created and copied to clipboard! (Valid for 24h)');
+    } catch (err: any) {
+      alert('Failed to create invite link');
     }
   };
 
@@ -386,8 +406,21 @@ export default function GroupDetails() {
 
               <div>
                 <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>ADMINISTRATIVE ACTIONS</p>
+                
+                <div style={{ marginBottom: '2rem' }}>
+                  <NeoButton onClick={handleGenerateInvite} style={{ width: '100%', marginBottom: '0.5rem', borderColor: 'var(--text-accent)' }}>
+                    {inviteLink ? 'Regenerate Invite Link' : 'Generate Invite Link'}
+                  </NeoButton>
+                  {inviteLink && (
+                    <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px dashed var(--text-accent)', fontSize: '0.75rem', overflowWrap: 'break-word', color: 'var(--text-accent)' }}>
+                      {inviteLink}
+                    </div>
+                  )}
+                  <p className="np-text-muted" style={{ fontSize: '0.65rem', marginTop: '0.25rem' }}>Links expire automatically after 24 hours.</p>
+                </div>
+
                 {!showAddMember ? (
-                  <NeoButton onClick={() => setShowAddMember(true)} style={{ width: '100%', marginBottom: '1rem' }}>+ Invite New Member</NeoButton>
+                  <NeoButton onClick={() => setShowAddMember(true)} style={{ width: '100%', marginBottom: '1rem' }}>+ Invite via Email</NeoButton>
                 ) : (
                   <form onSubmit={handleAddMember} style={{ marginBottom: '1rem' }}>
                      <input 

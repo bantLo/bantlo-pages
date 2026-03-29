@@ -259,3 +259,61 @@ export async function addFriendByEmail(email: string) {
   if (error) throw error;
   return data;
 }
+
+export async function createGroupInvite(groupId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Auth required');
+  const { data, error } = await supabase
+    .from('group_invites')
+    .insert([{ 
+      group_id: groupId, 
+      inviter_id: user.id
+      // expires_at is handled by DB default (24h)
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchInviteMetadata(inviteId: string) {
+  const { data, error } = await supabase
+    .from('group_invites')
+    .select(`
+      id,
+      expires_at,
+      group:group_id (
+        id,
+        name
+      )
+    `)
+    .eq('id', inviteId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function acceptGroupInvite(inviteId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Please sign in to join the group.');
+
+  // 1. Fetch group ID from invite
+  const { data: invite, error: e1 } = await supabase
+    .from('group_invites')
+    .select('group_id, expires_at')
+    .eq('id', inviteId)
+    .single();
+    
+  if (e1 || !invite) throw new Error('Invite not found or expired.');
+  if (new Date(invite.expires_at) < new Date()) throw new Error('This invite link has expired.');
+
+  // 2. Add member
+  const { error: e2 } = await supabase
+    .from('group_members')
+    .insert([{ group_id: invite.group_id, user_id: user.id }]);
+    
+  if (e2 && !e2.message.includes('unique constraint')) throw e2;
+  
+  return invite.group_id;
+}
+
