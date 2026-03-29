@@ -306,7 +306,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
 
       <div style={{ display: 'flex', gap: '1rem' }}>
         <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={loading || (splitType === 1 && exactRemaining !== 0) || (payerType === 'multiple' && multiPayerRemaining !== 0)}>
-          {loading ? 'Processing...' : (editExpenseId ? 'Update Record' : 'Save Matrix')}
+          {loading ? 'Processing...' : (editExpenseId ? 'Update Record' : 'Save Expense')}
         </NeoButton>
         <NeoButton type="button" onClick={onCancel} disabled={loading}>Cancel</NeoButton>
       </div>
