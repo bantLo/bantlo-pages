@@ -265,37 +265,65 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- General Secure Access Models
+-- Safely DROP existing policies before RE-CREATING (Idempotent Migration)
+DROP POLICY IF EXISTS "Public Profiles are viewable by everyone" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Public Profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "View groups natively" ON groups;
+DROP POLICY IF EXISTS "Insert groups natively" ON groups;
+DROP POLICY IF EXISTS "Update groups natively" ON groups;
+DROP POLICY IF EXISTS "Delete groups natively" ON groups;
 CREATE POLICY "View groups natively" ON groups FOR SELECT USING (is_group_member(id) OR created_by = auth.uid());
 CREATE POLICY "Insert groups natively" ON groups FOR INSERT WITH CHECK (auth.uid() = created_by);
 CREATE POLICY "Update groups natively" ON groups FOR UPDATE USING (is_group_member(id));
 CREATE POLICY "Delete groups natively" ON groups FOR DELETE USING (created_by = auth.uid());
 
+DROP POLICY IF EXISTS "View memberships natively" ON group_members;
+DROP POLICY IF EXISTS "Insert memberships natively" ON group_members;
+DROP POLICY IF EXISTS "Delete memberships natively" ON group_members;
 CREATE POLICY "View memberships natively" ON group_members FOR SELECT USING (is_group_member(group_id) OR user_id = auth.uid());
 CREATE POLICY "Insert memberships natively" ON group_members FOR INSERT WITH CHECK (auth.uid() = user_id OR EXISTS (SELECT 1 FROM groups WHERE id = group_id AND created_by = auth.uid()));
 CREATE POLICY "Delete memberships natively" ON group_members FOR DELETE USING (auth.uid() = user_id OR EXISTS (SELECT 1 FROM groups WHERE id = group_id AND created_by = auth.uid()));
 
+DROP POLICY IF EXISTS "View expenses natively" ON expenses;
+DROP POLICY IF EXISTS "Insert expenses natively" ON expenses;
+DROP POLICY IF EXISTS "Delete expenses natively" ON expenses;
+DROP POLICY IF EXISTS "Update expenses natively" ON expenses;
 CREATE POLICY "View expenses natively" ON expenses FOR SELECT USING (is_group_member(group_id));
 CREATE POLICY "Insert expenses natively" ON expenses FOR INSERT WITH CHECK (is_group_member(group_id));
 CREATE POLICY "Delete expenses natively" ON expenses FOR DELETE USING (is_group_member(group_id));
 CREATE POLICY "Update expenses natively" ON expenses FOR UPDATE USING (is_group_member(group_id));
 
+DROP POLICY IF EXISTS "View splits natively" ON expense_splits;
+DROP POLICY IF EXISTS "Insert splits natively" ON expense_splits;
+DROP POLICY IF EXISTS "Update splits natively" ON expense_splits;
+DROP POLICY IF EXISTS "Delete splits natively" ON expense_splits;
 CREATE POLICY "View splits natively" ON expense_splits FOR SELECT USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Insert splits natively" ON expense_splits FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Update splits natively" ON expense_splits FOR UPDATE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Delete splits natively" ON expense_splits FOR DELETE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 
+DROP POLICY IF EXISTS "View payments natively" ON expense_payments;
+DROP POLICY IF EXISTS "Insert payments natively" ON expense_payments;
+DROP POLICY IF EXISTS "Update payments natively" ON expense_payments;
+DROP POLICY IF EXISTS "Delete payments natively" ON expense_payments;
 CREATE POLICY "View payments natively" ON expense_payments FOR SELECT USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Insert payments natively" ON expense_payments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Update payments natively" ON expense_payments FOR UPDATE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 CREATE POLICY "Delete payments natively" ON expense_payments FOR DELETE USING (EXISTS (SELECT 1 FROM expenses WHERE expenses.id = expense_id AND is_group_member(expenses.group_id)));
 
+DROP POLICY IF EXISTS "View balances natively" ON balances;
+DROP POLICY IF EXISTS "Insert balances natively" ON balances;
+DROP POLICY IF EXISTS "Update balances natively" ON balances;
 CREATE POLICY "View balances natively" ON balances FOR SELECT USING (is_group_member(group_id));
 CREATE POLICY "Insert balances natively" ON balances FOR INSERT WITH CHECK (is_group_member(group_id) OR (auth.uid() = user_id));
 CREATE POLICY "Update balances natively" ON balances FOR UPDATE USING (is_group_member(group_id) OR (auth.uid() = user_id));
 
+DROP POLICY IF EXISTS "View settlements natively" ON settlements;
+DROP POLICY IF EXISTS "Insert settlements natively" ON settlements;
+DROP POLICY IF EXISTS "Delete settlements natively" ON settlements;
 CREATE POLICY "View settlements natively" ON settlements FOR SELECT USING (is_group_member(group_id));
 CREATE POLICY "Insert settlements natively" ON settlements FOR INSERT WITH CHECK (is_group_member(group_id));
 CREATE POLICY "Delete settlements natively" ON settlements FOR DELETE USING (is_group_member(group_id));
@@ -310,6 +338,8 @@ CREATE TABLE IF NOT EXISTS group_invites (
 
 ALTER TABLE group_invites ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view invite metadata" ON group_invites;
+DROP POLICY IF EXISTS "Members can create invites" ON group_invites;
 CREATE POLICY "Anyone can view invite metadata" 
 ON group_invites FOR SELECT 
 USING (expires_at > now());
