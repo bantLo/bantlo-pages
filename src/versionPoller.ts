@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 const INSTALLED_VERSION_KEY = 'bantlo_installed_version';
 const LATEST_VERSION_KEY = 'bantlo_latest_server_version';
-const DEPLOYMENT_DELAY_MS = 2 * 60 * 1000; // 2 minute buffer for Cloudflare Sync
+const DEPLOYMENT_DELAY_MS = 2.5 * 60 * 1000; // 2.5 minute buffer for Cloudflare Sync
 
 export async function checkVersion() {
   try {
