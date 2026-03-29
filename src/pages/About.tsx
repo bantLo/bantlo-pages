@@ -46,6 +46,21 @@ export default function About() {
           The <span style={{ color: 'var(--text-accent)' }}>bantLo</span> org
         </h2>
 
+        <div className="np-section" style={{ marginBottom: '2rem', background: 'var(--bg-dark)', borderStyle: 'solid' }}>
+          <h3 className="np-title" style={{ fontSize: '1rem', marginBottom: '1rem', color: 'var(--text-accent)' }}>THE ARCHITECTURE OF SHARING</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
+            <div>
+              <strong style={{ color: 'white' }}>1. EQUAL SPLIT</strong>: The protocol divides the total amount into identical fragments for every group member. Perfect for shared services and split-second accounting.
+            </div>
+            <div>
+              <strong style={{ color: 'white' }}>2. EXACT SPLIT</strong>: You assign precise currency fragments to each individual. The sum must identically match the total expense amount to ensure mathematical parity.
+            </div>
+            <div>
+              <strong style={{ color: 'white' }}>3. SPLIT BY SHARES</strong>: A weighted distribution system. If you assign someone <span style={{ color: 'var(--text-accent)' }}>0 shares</span>, the protocol automatically excludes them from the debt cycle for that record.
+            </div>
+          </div>
+        </div>
+
         <div className="np-section" style={{ marginBottom: '2rem' }}>
           <h3 className="np-title" style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Vision</h3>
           <p className="np-text-muted" style={{ lineHeight: 1.6 }}>
@@ -58,7 +73,8 @@ export default function About() {
           <div className="np-section" style={{ borderStyle: 'dashed' }}>
              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.8rem' }}>Tech Stack</h4>
              <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-               <li>• Vite + React (UI)</li>
+               <li>• Vite + React (UI Core)</li>
+               <li>• NeoPop UI (Brutalist Design)</li>
                <li>• Supabase (Global Sync)</li>
                <li>• IndexedDB (Offline Engine)</li>
                <li>• PWA (Native Install)</li>
@@ -92,7 +108,7 @@ export default function About() {
                textAlign: 'left'
              }}>
                <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                 Protocol Identity: <span style={{ color: 'white' }}>Installed v{versionData.installed_version || versionData.version}</span>
+                Identity: <span style={{ color: 'white' }}>Installed v{versionData.installed_version || versionData.version}</span>
                </p>
                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                  Network Status: <span style={{ color: 'var(--text-accent)' }}>Latest v{versionData.version}</span>

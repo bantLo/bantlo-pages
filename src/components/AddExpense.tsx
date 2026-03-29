@@ -89,15 +89,23 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       const totalShares = Object.values(shares).reduce((a, b) => a + (Number(b) || 0), 0);
       if (totalShares > 0) {
         let runningTotal = 0;
-        members.forEach((m, i) => {
-          const userShare = Number(shares[m.user_id]) || 0;
-          if (i === members.length - 1) {
+        // Identify non-zero share members for total distribution
+        const activeMembers = members.filter(m => (Number(shares[m.user_id]) || 0) > 0);
+        
+        activeMembers.forEach((m, i) => {
+          const userShare = Number(shares[m.user_id]);
+          if (i === activeMembers.length - 1) {
             computed[m.user_id] = parseFloat((total - runningTotal).toFixed(2));
           } else {
             const splitAmt = parseFloat(((userShare / totalShares) * total).toFixed(2));
             computed[m.user_id] = splitAmt;
             runningTotal += splitAmt;
           }
+        });
+
+        // Ensure members with 0 shares are explicitly 0.00
+        members.forEach(m => {
+          if (!computed[m.user_id]) computed[m.user_id] = 0;
         });
       }
     }
@@ -118,6 +126,9 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
     e.preventDefault();
     if (!amount || amount <= 0) return alert('Invalid amount');
     if (splitType === 1 && exactRemaining !== 0) return alert('Exact splits must sum strictly to the total amount.');
+    if (splitType === 2 && Object.values(shares).reduce((a, b) => a + (Number(b) || 0), 0) === 0) {
+      return alert('Split by Shares requires at least one person to have more than 0 shares.');
+    }
     if (payerType === 'multiple' && multiPayerRemaining !== 0) return alert('Multi-payer sums must identically equal the total amount.');
     if (payerType === 'single' && !singlePayerId) return alert('Please assign a primary payer.');
 
@@ -293,9 +304,10 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
                 <input 
                   type="number" 
                   step="1" 
-                  placeholder="Shares"
-                  value={shares[m.user_id] || ''} 
-                  onChange={e => setShares({...shares, [m.user_id]: parseInt(e.target.value) || 0})}
+                  min="0"
+                  placeholder="0"
+                  value={shares[m.user_id] ?? ''} 
+                  onChange={e => setShares({...shares, [m.user_id]: Math.max(0, parseInt(e.target.value) || 0)})}
                   style={{ width: '60px', background: 'transparent', border: '1px solid #555', color: 'white', padding: '0.2rem' }}
                 />
               )}

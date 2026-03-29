@@ -131,7 +131,7 @@ export default function Settings() {
           onClick={() => navigate('/about')} 
           style={{ width: '100%', marginBottom: '1.5rem', borderColor: 'var(--text-accent)' }}
         >
-          Read Protocol Mission & Support ›
+          Read About & Support ›
         </NeoButton>
 
         <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.85rem' }}>
