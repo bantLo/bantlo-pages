@@ -10,6 +10,7 @@ import Auth from './pages/Auth';
 
 import LandingPage from './pages/Landing';
 import JoinGroup from './pages/JoinGroup';
+import About from './pages/About';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -67,6 +68,7 @@ function App() {
         <Route path="/groups/:id" element={session ? <GroupDetails /> : <Navigate to="/auth" />} />
         <Route path="/settings" element={session ? <Settings /> : <Navigate to="/auth" />} />
         <Route path="/join/:inviteId" element={<JoinGroup />} />
+        <Route path="/about" element={<About />} />
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

@@ -336,3 +336,36 @@ ALTER TABLE public.expense_payments
 ADD CONSTRAINT fk_expense_payments_profiles 
 FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
 
+CREATE OR REPLACE FUNCTION delete_user_account()
+RETURNS JSONB AS $$
+DECLARE
+  v_user_uuid UUID := auth.uid();
+  v_blocking_groups TEXT[];
+BEGIN
+  -- 1. Check for non-zero balances
+  SELECT ARRAY_AGG(g.name) INTO v_blocking_groups
+  FROM balances b
+  JOIN groups g ON g.id = b.group_id
+  WHERE b.user_id = v_user_uuid AND ABS(b.balance) > 0.01;
+
+  IF v_blocking_groups IS NOT NULL THEN
+    RAISE EXCEPTION 'Cannot delete account. You have active balances in the following groups: %. Please settle all debts first.', array_to_string(v_blocking_groups, ', ');
+  END IF;
+
+  -- 2. Cleanup: Delete groups where this user is the last member
+  -- This avoids orphaned groups in the database.
+  DELETE FROM groups 
+  WHERE id IN (
+    SELECT group_id 
+    FROM group_members 
+    GROUP BY group_id 
+    HAVING COUNT(*) = 1 AND MAX(user_id) = v_user_uuid
+  );
+
+  -- 3. Final Wipe: Delete the public profile
+  -- Cascading logic defined in schema will handle the rest of public schema.
+  DELETE FROM public.profiles WHERE id = v_user_uuid;
+  
+  RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -74,7 +74,19 @@ export default function LandingPage() {
       {/* Navbar Minimalist */}
       <nav className="np-flex-between" style={{ padding: '1.5rem 2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', borderBottom: '2px solid var(--border-color)' }}>
         <Logo />
-        <NeoButton to="/auth" style={{ padding: '0.4rem 1rem' }}>Login</NeoButton>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <a 
+            href="https://github.com/orgs/bantLo/repositories" 
+            target="_blank" 
+            rel="noreferrer"
+            className="desktop-only"
+            style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 'bold' }}
+          >
+            GITHUB
+          </a>
+          <NeoButton to="/about" variant="default" style={{ padding: '0.4rem 1rem' }}>About</NeoButton>
+          <NeoButton to="/auth" style={{ padding: '0.4rem 1rem' }}>Login</NeoButton>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -196,6 +208,17 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+    <footer style={{ backgroundColor: 'var(--bg-dark)', borderTop: '2px solid var(--border-color)', padding: '3rem 0' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.6 }}>
+          <p style={{ fontSize: '0.8rem' }}>© 2026 bantLo Protocol</p>
+          <div style={{ display: 'flex', gap: '2rem', fontSize: '0.8rem', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>bantlo.expenses@gmail.com</span>
+            <a href="/about" style={{ color: 'inherit', textDecoration: 'none' }}>About</a>
+            <a href="https://github.com/orgs/bantLo/repositories" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Source (GitHub)</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
+

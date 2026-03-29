@@ -336,3 +336,10 @@ export async function acceptGroupInvite(inviteId: string) {
   return invite.group_id;
 }
 
+export async function deleteAccount() {
+  const { data, error } = await supabase.rpc('delete_user_account');
+  if (error) throw error;
+  return data;
+}
+
+
