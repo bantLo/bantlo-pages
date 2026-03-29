@@ -33,21 +33,13 @@ export default function Settings() {
     const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
     setIsPWA(standalone);
 
-    const parse = (str: string | null) => {
-      if (!str) return null;
-      try {
-        if (str.trim().startsWith('{')) return JSON.parse(str);
-        return { version: str };
-      } catch (e) {
-        return null;
-      }
-    };
-
-    // 1. Initial load from storage
-    const stored = localStorage.getItem('bantlo_current_version');
-    if (stored) setVersionData(parse(stored));
+    // 1. Initial load from storage (Installed version is the source of truth for the local instance)
+    const storedInstalled = localStorage.getItem('bantlo_installed_version');
+    if (storedInstalled) {
+      setVersionData({ version: storedInstalled, status: 'Scanning...' });
+    }
     
-    // 2. Fresh check
+    // 2. Fresh check (Fetches latest server version via cache-bust)
     checkVersion().then((latest) => {
       if (latest) setVersionData(latest);
     });
@@ -134,13 +126,15 @@ export default function Settings() {
 
       <div className="np-section" style={{ borderStyle: 'dashed' }}>
         <h3 className="np-title" style={{ fontSize: '1rem', marginBottom: '1.5rem' }}>BANTLO CORE INFRASTRUCTURE</h3>
+        
+        <NeoButton 
+          onClick={() => navigate('/about')} 
+          style={{ width: '100%', marginBottom: '1.5rem', borderColor: 'var(--text-accent)' }}
+        >
+          Read Protocol Mission & Support ›
+        </NeoButton>
+
         <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.85rem' }}>
-          <li style={{ marginBottom: '0.75rem' }}>
-            <span className="np-text-muted">About the Protocol:</span> 
-            <strong style={{ marginLeft: '0.5rem' }}>
-              <a href="/about" onClick={(e) => { e.preventDefault(); navigate('/about'); }} style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}>See Mission/Contact</a>
-            </strong>
-          </li>
           <li style={{ marginBottom: '0.75rem' }}>
             <span className="np-text-muted">Offline Storage Layer:</span> 
             <strong style={{ marginLeft: '0.5rem' }}>IndexedDB + CacheStorage</strong>
@@ -173,20 +167,43 @@ export default function Settings() {
             if (!versionData) return <span style={{ fontWeight: 'bold' }}>SCANNING SYSTEM...</span>;
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '900', fontSize: '1.2rem', color: 'var(--text-accent)' }}>
-                      v{versionData.version || '0.0.0'}
-                      {versionData.status === 'Deploying...' && (
-                        <span style={{ marginLeft: '1rem', fontSize: '0.7rem', color: 'var(--text-warning)', verticalAlign: 'middle', animation: 'pulse 2s infinite' }}>[SYNCING...]</span>
-                      )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Installed Engine</span>
+                      <span style={{ fontWeight: '900', fontSize: '1.2rem', color: 'white' }}>
+                        v{versionData.installed_version || versionData.version || '0.0.0'}
+                      </span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Network Sync</span>
+                      <span style={{ fontWeight: '900', fontSize: '1.2rem', color: 'var(--text-accent)' }}>
+                        v{versionData.version || '0.0.0'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', borderTop: '1px solid #333', paddingTop: '0.5rem' }}>
+                    <span style={{ fontSize: '0.7rem', color: versionData.status === 'Update Available' ? 'var(--text-accent)' : 'var(--text-secondary)' }}>
+                       {versionData.status === 'Update Available' ? '⚡ New Protocol Found' : '✔ System Synced'}
                     </span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
-                      TAP 5X TO FORCE SYNC
+                    <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>
+                      TAP 5X TO FORCE
                     </span>
                   </div>
+
+                  {versionData.status === 'Update Available' && (
+                    <NeoButton 
+                      onClick={() => forceCacheUpdate()} 
+                      style={{ marginTop: '0.5rem', backgroundColor: 'var(--text-accent)', color: 'black', border: 'none', height: '2rem', fontSize: '0.75rem' }}
+                    >
+                      UPDATE NOW
+                    </NeoButton>
+                  )}
+
                   {versionData.message && (
-                    <p style={{ fontSize: '0.8rem', margin: 0, borderTop: '1px solid #333', paddingTop: '0.5rem', lineHeight: '1.4' }}>
-                      {versionData.message}
+                    <p style={{ fontSize: '0.75rem', margin: 0, marginTop: '0.5rem', opacity: 0.8, lineHeight: '1.4', fontStyle: 'italic' }}>
+                      "{versionData.message}"
                     </p>
                   )}
                 </div>

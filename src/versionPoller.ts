@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 
-const APP_VERSION_KEY = 'bantlo_current_version';
-const DEPLOYMENT_DELAY_MS = 5 * 60 * 1000; // 5 minute buffer for Cloudflare Pages edge Sync
+const INSTALLED_VERSION_KEY = 'bantlo_installed_version';
+const LATEST_VERSION_KEY = 'bantlo_latest_server_version';
+const DEPLOYMENT_DELAY_MS = 2 * 60 * 1000; // 2 minute buffer for Cloudflare Sync
 
 export async function checkVersion() {
   try {
-    let fetchUrl = import.meta.env.VITE_VERSION_INFO_URL || '/version.info';
+    // 1. Direct fetch from deployment site with cache-busting timestamp
+    let fetchUrl = `/version.info?t=${Date.now()}`;
     let response = await fetch(fetchUrl, { cache: 'no-store' });
     if (!response.ok) return null;
     
@@ -22,44 +24,36 @@ export async function checkVersion() {
       latestData = { version: text.trim() || 'Unknown' };
     }
 
-    const storedString = localStorage.getItem(APP_VERSION_KEY);
-    let currentData: any = null;
-
-    try {
-      if (storedString) {
-        if (storedString.trim().startsWith('{')) {
-          currentData = JSON.parse(storedString);
-        } else {
-          currentData = { version: storedString };
-        }
-      }
-    } catch (e) {
-      console.warn('[Version Poller] Stale local format');
-    }
+    // 2. Identify what is currently "Installed" (Actually running in memory)
+    let installedVersion = localStorage.getItem(INSTALLED_VERSION_KEY);
     
-    // Always update local storage with the latest structure
-    localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
+    // 3. First-run initialization: If no "installed" record exists, we are running the server's version.
+    if (!installedVersion) {
+      localStorage.setItem(INSTALLED_VERSION_KEY, latestData.version);
+      installedVersion = latestData.version;
+    }
 
-    if (currentData && currentData.version && currentData.version !== latestData.version) {
-      console.log('New version found:', latestData.version);
+    // 4. Update the "Latest Seen" record
+    localStorage.setItem(LATEST_VERSION_KEY, JSON.stringify(latestData));
+
+    // 5. Compare and Status logic
+    if (installedVersion !== latestData.version) {
+      console.log(`[Version Sync] Mismatch: Installed=${installedVersion}, Server=${latestData.version}`);
       
       const publishedAt = latestData.published_at ? new Date(latestData.published_at).getTime() : 0;
       const isDeploymentReady = (Date.now() - publishedAt) >= DEPLOYMENT_DELAY_MS;
 
       if (isDeploymentReady) {
-        setTimeout(() => {
-          if (window.confirm(`A new version (${latestData.version}) of bantLo is available! Refuse to be stale—refresh now?`)) {
-            forceCacheUpdate();
-          }
-        }, 500);
+        latestData.status = 'Update Available';
+        // Auto-prompt logic (throttled by user interaction, usually checked in UI)
       } else {
-        console.log('Deployment still in progress... waiting for edge sync.');
-        latestData.status = 'Deploying...';
+        latestData.status = 'Syncing...';
       }
     } else {
-      latestData.status = 'Ready';
+      latestData.status = 'Up to Date';
     }
     
+    latestData.installed_version = installedVersion;
     return latestData;
   } catch (error) {
     console.warn('[Version Poller] Check failed:', error);
@@ -68,10 +62,21 @@ export async function checkVersion() {
 }
 
 export function forceCacheUpdate() {
+  // 1. Mark the latest seen version as officially "Installed" BEFORE reload
+  const latestRaw = localStorage.getItem(LATEST_VERSION_KEY);
+  if (latestRaw) {
+    try {
+      const latest = JSON.parse(latestRaw);
+      localStorage.setItem(INSTALLED_VERSION_KEY, latest.version);
+    } catch (e) {
+      // Fallback if parsing fails
+    }
+  }
+
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    console.log('[Version Sync] Signalling SW to flush shell caches...');
     navigator.serviceWorker.controller.postMessage({ type: 'FORCE_UPDATE' });
   } else {
-    // If no controller, just clear standard caches and reload
     caches.keys().then((names) => {
       for (let name of names) caches.delete(name);
     }).then(() => {

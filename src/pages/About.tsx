@@ -1,9 +1,25 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 import NeoButton from '../components/NeoButton';
+import { checkVersion } from '../versionPoller';
 
 export default function About() {
   const navigate = useNavigate();
+  const [versionData, setVersionData] = useState<any>(null);
+
+  useEffect(() => {
+    // 1. Initial load from storage
+    const storedInstalled = localStorage.getItem('bantlo_installed_version');
+    if (storedInstalled) {
+      setVersionData({ version: storedInstalled });
+    }
+    
+    // 2. Fresh check
+    checkVersion().then((latest) => {
+      if (latest) setVersionData(latest);
+    });
+  }, []);
 
   return (
     <div className="np-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -66,6 +82,23 @@ export default function About() {
         </div>
 
         <div style={{ marginTop: '3rem', textAlign: 'center', paddingBottom: '3rem' }}>
+          {versionData && (
+             <div style={{ 
+               marginBottom: '2rem', 
+               padding: '1rem', 
+               background: 'var(--bg-dark)', 
+               border: '1px dashed var(--border-color)',
+               display: 'inline-block',
+               textAlign: 'left'
+             }}>
+               <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                 Protocol Identity: <span style={{ color: 'white' }}>Installed v{versionData.installed_version || versionData.version}</span>
+               </p>
+               <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                 Network Status: <span style={{ color: 'var(--text-accent)' }}>Latest v{versionData.version}</span>
+               </p>
+             </div>
+          )}
           <p className="np-text-muted" style={{ fontSize: '0.75rem', marginBottom: '1.5rem' }}>© 2026 bantLo org. All Rights Reserved.</p>
           <NeoButton variant="default" onClick={() => navigate('/')}>Back to Gateway</NeoButton>
         </div>
