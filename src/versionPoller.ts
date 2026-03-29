@@ -1,49 +1,69 @@
 import { useEffect } from 'react';
 
 const APP_VERSION_KEY = 'bantlo_current_version';
+const DEPLOYMENT_DELAY_MS = 5 * 60 * 1000; // 5 minute buffer for Cloudflare Pages edge Sync
 
 export async function checkVersion() {
   try {
     let fetchUrl = import.meta.env.VITE_VERSION_INFO_URL || '/version.info';
     let response = await fetch(fetchUrl, { cache: 'no-store' });
-    if (!response.ok) return;
+    if (!response.ok) return null;
     
-    const latestData = await response.json();
+    const text = await response.text();
+    let latestData: any = { version: '0.0.0' };
+    
+    try {
+      if (text.trim().startsWith('{')) {
+        latestData = JSON.parse(text);
+      } else {
+        latestData = { version: text.trim() };
+      }
+    } catch (e) {
+      latestData = { version: text.trim() || 'Unknown' };
+    }
+
     const storedString = localStorage.getItem(APP_VERSION_KEY);
-    
-    let currentData = null;
+    let currentData: any = null;
+
     try {
       if (storedString) {
-        // If it starts with '{', it's our new JSON format
         if (storedString.trim().startsWith('{')) {
           currentData = JSON.parse(storedString);
         } else {
-          // Legacy plain-string version (e.g. "1.0.8")
           currentData = { version: storedString };
         }
       }
     } catch (e) {
-      console.warn('[Version Poller] Stale format detected, resetting...');
+      console.warn('[Version Poller] Stale local format');
     }
     
-    // First load or missing data
-    if (!currentData || !currentData.version) {
-      localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
-      return;
-    }
+    // Always update local storage with the latest structure
+    localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
 
-    if (currentData.version !== latestData.version) {
-      console.log('Update detected!', latestData.version);
-      if (window.confirm(`A new version (${latestData.version}) of bantLo is available! Refuse to be stale—refresh now?`)) {
-        localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
-        forceCacheUpdate();
+    if (currentData && currentData.version && currentData.version !== latestData.version) {
+      console.log('New version found:', latestData.version);
+      
+      const publishedAt = latestData.published_at ? new Date(latestData.published_at).getTime() : 0;
+      const isDeploymentReady = (Date.now() - publishedAt) >= DEPLOYMENT_DELAY_MS;
+
+      if (isDeploymentReady) {
+        setTimeout(() => {
+          if (window.confirm(`A new version (${latestData.version}) of bantLo is available! Refuse to be stale—refresh now?`)) {
+            forceCacheUpdate();
+          }
+        }, 500);
+      } else {
+        console.log('Deployment still in progress... waiting for edge sync.');
+        latestData.status = 'Deploying...';
       }
     } else {
-      // Even if version is same, update the message/metadata if it changed
-      localStorage.setItem(APP_VERSION_KEY, JSON.stringify(latestData));
+      latestData.status = 'Ready';
     }
+    
+    return latestData;
   } catch (error) {
     console.warn('[Version Poller] Check failed:', error);
+    return null;
   }
 }
 

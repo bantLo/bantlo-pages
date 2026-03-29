@@ -4,8 +4,18 @@ import Logo from '../components/Logo';
 
 export default function LandingPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Detect iOS
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(ios);
+
+    // Detect Standalone
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    setIsStandalone(standalone);
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -24,8 +34,12 @@ export default function LandingPage() {
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
       }
+    } else if (isIOS && !isStandalone) {
+      alert("To Install on iOS: 1. Tap the 'Share' icon (square with arrow up) at the bottom 2. Scroll down and tap 'Add to Home Screen' (+ icon).");
+    } else if (isStandalone) {
+      window.location.href = '/dashboard';
     } else {
-      alert("Installation prompt isn't available. You might already be running the App, or your browser doesn't cleanly enforce `beforeinstallprompt` natively (e.g. Safari).");
+      alert("Installation prompt isn't natively available. You might already be running the App or your browser is restrictive. For Chrome: Use the Triple Dot menu → Install App.");
     }
   };
 
@@ -92,11 +106,20 @@ export default function LandingPage() {
               <NeoButton 
                 variant="primary" 
                 onClick={handleInstallClick}
-                disabled={!deferredPrompt}
                 style={{ width: '100%', padding: '1rem' }}
               >
-                {deferredPrompt ? 'Install App ↓' : 'App Installed / Use Share Sheet'}
+                {(() => {
+                  if (isStandalone) return 'App Ready › Open Dashboard';
+                  if (deferredPrompt) return 'Install App ↓';
+                  if (isIOS) return 'Add to Home Screen (Share → +)';
+                  return 'Access Web App ❯';
+                })()}
               </NeoButton>
+              {isIOS && !isStandalone && (
+                <p style={{ fontSize: '0.75rem', marginTop: '0.75rem', textAlign: 'center', color: 'var(--text-accent)' }}>
+                  (Click above to see iOS instructions)
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -12,26 +12,30 @@ export default function Settings() {
   const navigate = useNavigate();
   const [showCacheModal, setShowCacheModal] = useState(false);
   const [versionData, setVersionData] = useState<any>(null);
+  const [isPWA, setIsPWA] = useState(false);
 
   useEffect(() => {
+    // Detect PWA Status
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    setIsPWA(standalone);
+
     const parse = (str: string | null) => {
       if (!str) return null;
       try {
         if (str.trim().startsWith('{')) return JSON.parse(str);
-        return { version: str }; // Legacy format handling
+        return { version: str };
       } catch (e) {
-        return { version: '1.0.8' }; // Baseline fallback
+        return null;
       }
     };
 
-    // Initial load from storage
+    // 1. Initial load from storage
     const stored = localStorage.getItem('bantlo_current_version');
-    setVersionData(parse(stored));
+    if (stored) setVersionData(parse(stored));
     
-    // Check for fresh version immediately
-    checkVersion().then(() => {
-      const fresh = localStorage.getItem('bantlo_current_version');
-      setVersionData(parse(fresh));
+    // 2. Fresh check
+    checkVersion().then((latest) => {
+      if (latest) setVersionData(latest);
     });
   }, []);
   
@@ -114,13 +118,9 @@ export default function Settings() {
             <strong style={{ marginLeft: '0.5rem' }}>IndexedDB + CacheStorage</strong>
           </li>
           <li style={{ marginBottom: '0.75rem' }}>
-            <span className="np-text-muted">UI Architecture:</span> 
-            <strong style={{ marginLeft: '0.5rem' }}>Vite React + NeoPop Dark</strong>
-          </li>
-          <li style={{ marginBottom: '0.75rem' }}>
-            <span className="np-text-muted">Logo Design:</span> 
-            <strong style={{ marginLeft: '0.5rem' }}>
-              <a href="https://www.svgrepo.com/svg/388633/split-cells" target="_blank" rel="noreferrer" style={{ color: 'var(--text-primary)' }}>SVG Repo</a>
+            <span className="np-text-muted">PWA Engine Status:</span> 
+            <strong style={{ marginLeft: '0.5rem', color: isPWA ? 'var(--text-accent)' : 'var(--text-warning)' }}>
+              {isPWA ? 'STANDALONE (App Mode)' : 'WEB BROWSER (Limited Performance)'}
             </strong>
           </li>
         </ul>
@@ -148,6 +148,9 @@ export default function Settings() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: '900', fontSize: '1.2rem', color: 'var(--text-accent)' }}>
                       v{versionData.version || '0.0.0'}
+                      {versionData.status === 'Deploying...' && (
+                        <span style={{ marginLeft: '1rem', fontSize: '0.7rem', color: 'var(--text-warning)', verticalAlign: 'middle', animation: 'pulse 2s infinite' }}>[SYNCING...]</span>
+                      )}
                     </span>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
                       TAP 5X TO FORCE SYNC
