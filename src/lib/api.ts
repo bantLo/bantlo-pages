@@ -263,18 +263,37 @@ export async function addFriendByEmail(email: string) {
 export async function createGroupInvite(groupId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Auth required');
+
+  // 1. Check if a link was created in the last 12 hours
+  const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+  const { data: existing, error: e1 } = await supabase
+    .from('group_invites')
+    .select('*')
+    .eq('group_id', groupId)
+    .eq('inviter_id', user.id)
+    .gt('created_at', twelveHoursAgo)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (existing && !e1) {
+    return { ...existing, reused: true };
+  }
+
+  // 2. Create new if none exists or older than 12h
   const { data, error } = await supabase
     .from('group_invites')
     .insert([{ 
       group_id: groupId, 
       inviter_id: user.id
-      // expires_at is handled by DB default (24h)
     }])
     .select()
     .single();
+
   if (error) throw error;
   return data;
 }
+
 
 export async function fetchInviteMetadata(inviteId: string) {
   const { data, error } = await supabase

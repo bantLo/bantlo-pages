@@ -139,11 +139,17 @@ export default function GroupDetails() {
       const link = `${window.location.origin}/join/${invite.id}`;
       setInviteLink(link);
       navigator.clipboard.writeText(link);
-      alert('Invite link created and copied to clipboard! (Valid for 24h)');
+      
+      if (invite.reused) {
+        alert('Active link found! Reusing existing invite link (One link per user per 12h allowed). Copied to clipboard!');
+      } else {
+        alert('Expirable invite link created and copied to clipboard! (Valid for 24h). Next fresh link available in 12h.');
+      }
     } catch (err: any) {
-      alert('Failed to create invite link');
+      alert('Failed to obtain invite link');
     }
   };
+
 
   const handleDeleteGroup = async () => {
     if (!id || !window.confirm('WARNING: Are you absolutely sure? This will permanently delete the group, all expenses, and all balances forever.')) return;
