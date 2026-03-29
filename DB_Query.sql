@@ -104,9 +104,11 @@ BEGIN
     SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
   END IF;
 
+  -- If v_group_id is NULL (cascade situation), let the parent handle the math.
   IF v_group_id IS NOT NULL THEN
     IF TG_OP = 'INSERT' THEN
-      UPDATE balances SET balance = balance + NEW.amount_paid WHERE group_id = v_group_id AND user_id = NEW.user_id;
+      INSERT INTO balances (group_id, user_id, balance) VALUES (v_group_id, NEW.user_id, NEW.amount_paid)
+      ON CONFLICT (group_id, user_id) DO UPDATE SET balance = balances.balance + EXCLUDED.balance;
     ELSIF TG_OP = 'DELETE' THEN
       UPDATE balances SET balance = balance - OLD.amount_paid WHERE group_id = v_group_id AND user_id = OLD.user_id;
     ELSIF TG_OP = 'UPDATE' THEN
@@ -133,9 +135,11 @@ BEGIN
     SELECT group_id INTO v_group_id FROM expenses WHERE id = NEW.expense_id;
   END IF;
 
+  -- If v_group_id is NULL (cascade situation), let the parent handle the math.
   IF v_group_id IS NOT NULL THEN
     IF TG_OP = 'INSERT' THEN
-      UPDATE balances SET balance = balance - NEW.amount_owed WHERE group_id = v_group_id AND user_id = NEW.user_id;
+      INSERT INTO balances (group_id, user_id, balance) VALUES (v_group_id, NEW.user_id, -NEW.amount_owed)
+      ON CONFLICT (group_id, user_id) DO UPDATE SET balance = balances.balance + EXCLUDED.balance;
     ELSIF TG_OP = 'DELETE' THEN
       UPDATE balances SET balance = balance + OLD.amount_owed WHERE group_id = v_group_id AND user_id = OLD.user_id;
     ELSIF TG_OP = 'UPDATE' THEN
@@ -145,6 +149,31 @@ BEGIN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger settlement: When a settlement is recorded, update balances for both participants.
+CREATE OR REPLACE FUNCTION update_balance_on_settlement() RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    -- Payer (from_user_id) increases balance (paid debt)
+    INSERT INTO balances (group_id, user_id, balance) VALUES (NEW.group_id, NEW.from_user_id, NEW.amount)
+    ON CONFLICT (group_id, user_id) DO UPDATE SET balance = balances.balance + EXCLUDED.balance;
+    -- Receiver (to_user_id) decreases balance (received payment)
+    INSERT INTO balances (group_id, user_id, balance) VALUES (NEW.group_id, NEW.to_user_id, -NEW.amount)
+    ON CONFLICT (group_id, user_id) DO UPDATE SET balance = balances.balance + EXCLUDED.balance;
+  ELSIF TG_OP = 'DELETE' THEN
+    -- Reverse effects
+    UPDATE balances SET balance = balance - OLD.amount WHERE group_id = OLD.group_id AND user_id = OLD.from_user_id;
+    UPDATE balances SET balance = balance + OLD.amount WHERE group_id = OLD.group_id AND user_id = OLD.to_user_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_settlement_balance ON settlements;
+CREATE TRIGGER trg_settlement_balance
+AFTER INSERT OR DELETE ON settlements
+FOR EACH ROW EXECUTE FUNCTION update_balance_on_settlement();
+
 
 DROP TRIGGER IF EXISTS trg_split_balance ON expense_splits;
 CREATE TRIGGER trg_split_balance
@@ -414,17 +443,27 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- This ensures v_group_id is available during the removal of an entire expense parent.
 CREATE OR REPLACE FUNCTION reverse_balance_before_expense_delete() RETURNS TRIGGER AS $$
 BEGIN
-  -- 1. Reverse all payments funded by users for this expense
+  -- 1. Reverse all payments funded by users for this expense (Aggregated)
   UPDATE balances b
-  SET balance = b.balance - p.amount_paid
-  FROM expense_payments p
-  WHERE p.expense_id = OLD.id AND b.group_id = OLD.group_id AND b.user_id = p.user_id;
+  SET balance = b.balance - sub.total_paid
+  FROM (
+    SELECT user_id, SUM(amount_paid) as total_paid
+    FROM expense_payments
+    WHERE expense_id = OLD.id
+    GROUP BY user_id
+  ) sub
+  WHERE b.group_id = OLD.group_id AND b.user_id = sub.user_id;
 
-  -- 2. Reverse all splits owed by users for this expense
+  -- 2. Reverse all splits owed by users for this expense (Aggregated)
   UPDATE balances b
-  SET balance = b.balance + s.amount_owed
-  FROM expense_splits s
-  WHERE s.expense_id = OLD.id AND b.group_id = OLD.group_id AND b.user_id = s.user_id;
+  SET balance = b.balance + sub.total_owed
+  FROM (
+    SELECT user_id, SUM(amount_owed) as total_owed
+    FROM expense_splits
+    WHERE expense_id = OLD.id
+    GROUP BY user_id
+  ) sub
+  WHERE b.group_id = OLD.group_id AND b.user_id = sub.user_id;
 
   RETURN OLD;
 END;

@@ -1,7 +1,7 @@
 {
   "name": "bantlo-pages",
   "private": true,
-  "version": "1.3.2",
+  "version": "1.3.3",
   "type": "module",
   "scripts": {
     "sync-version": "rm -f public/version.info && cp version.info public/version.info || echo 'Version sync skipped: source not found'",
