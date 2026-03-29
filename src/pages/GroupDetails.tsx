@@ -24,9 +24,9 @@ export default function GroupDetails() {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [memberLoading, setMemberLoading] = useState(false);
   const [editGroupName, setEditGroupName] = useState('');
-  const [editGroupCurrency, setEditGroupCurrency] = useState('');
+  const [editGroupCurrency, setEditGroupCurrency] = useState('INR');
 
-  const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
+  const COMMON_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');

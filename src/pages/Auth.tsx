@@ -14,6 +14,7 @@ export default function Auth() {
   const [message, setMessage] = useState<{ text: string, type: 'error' | 'success' } | null>(null);
   const [isPWA, setIsPWA] = useState(false);
   const [showCacheModal, setShowCacheModal] = useState(false);
+  const [isSignedUp, setIsSignedUp] = useState(false);
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
@@ -47,7 +48,8 @@ export default function Auth() {
           }
         });
         if (error) throw error;
-        setMessage({ text: 'Check your email for the confirmation link!', type: 'success' });
+        setIsSignedUp(true);
+        setMessage({ text: `Check the email ${email} to confirm your account!`, type: 'success' });
       } else if (viewState === 'forgot_password') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin
@@ -109,85 +111,22 @@ export default function Auth() {
           </div>
         )}
 
-        <form onSubmit={handleAuth}>
-          {viewState === 'signup' && (
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                FULL NAME
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  background: 'var(--bg-dark)',
-                  border: '2px solid var(--border-color)',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  fontFamily: 'inherit'
-                }}
-                placeholder="John Doe"
-              />
+          {isSignedUp ? (
+            <div style={{ padding: '1rem', border: '2px dashed var(--text-accent)', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontWeight: 'bold', color: 'var(--text-accent)' }}>✓ VERIFICATION SENT</p>
+              <p style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>We've sent a magic link to <strong>{email}</strong>. Please click it to activate your account natively.</p>
             </div>
-          )}
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-              EMAIL ADDRESS
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                background: 'var(--bg-dark)',
-                border: '2px solid var(--border-color)',
-                color: 'var(--text-primary)',
-                outline: 'none',
-                fontFamily: 'inherit'
-              }}
-              placeholder="you@example.com"
-            />
-          </div>
-          {viewState !== 'forgot_password' && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                PASSWORD
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  background: 'var(--bg-dark)',
-                  border: '2px solid var(--border-color)',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                  marginBottom: viewState === 'signup' ? '1rem' : '0'
-                }}
-                placeholder="••••••••"
-                minLength={8}
-              />
-              
+          ) : (
+            <form onSubmit={handleAuth}>
               {viewState === 'signup' && (
-                <>
+                <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                    CONFIRM PASSWORD
+                    FULL NAME
                   </label>
                   <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
                     style={{
                       width: '100%',
@@ -198,23 +137,93 @@ export default function Auth() {
                       outline: 'none',
                       fontFamily: 'inherit'
                     }}
+                    placeholder="John Doe"
+                  />
+                </div>
+              )}
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                  EMAIL ADDRESS
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'var(--bg-dark)',
+                    border: '2px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                  placeholder="you@example.com"
+                />
+              </div>
+              {viewState !== 'forgot_password' && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                    PASSWORD
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: 'var(--bg-dark)',
+                      border: '2px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      marginBottom: viewState === 'signup' ? '1rem' : '0'
+                    }}
                     placeholder="••••••••"
                     minLength={8}
                   />
-                </>
+                  
+                  {viewState === 'signup' && (
+                    <>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                        CONFIRM PASSWORD
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          background: 'var(--bg-dark)',
+                          border: '2px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          outline: 'none',
+                          fontFamily: 'inherit'
+                        }}
+                        placeholder="••••••••"
+                        minLength={8}
+                      />
+                    </>
+                  )}
+                </div>
               )}
-            </div>
+              
+              <NeoButton 
+                type="submit" 
+                variant="primary" 
+                style={{ width: '100%' }}
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : viewState === 'login' ? 'Authenticate' : viewState === 'signup' ? 'Sign Up' : 'Send Reset Link'}
+              </NeoButton>
+            </form>
           )}
-          
-          <NeoButton 
-            type="submit" 
-            variant="primary" 
-            style={{ width: '100%' }}
-            disabled={loading}
-          >
-            {loading ? 'Processing...' : viewState === 'login' ? 'Authenticate' : viewState === 'signup' ? 'Sign Up' : 'Send Reset Link'}
-          </NeoButton>
-        </form>
 
         <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'center' }}>
           {viewState === 'login' && (
