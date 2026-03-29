@@ -12,11 +12,13 @@ interface AddSettlementProps {
   members: Member[];
   onComplete: () => void;
   onCancel: () => void;
+  initialFromId?: string;
+  initialToId?: string;
 }
 
-export default function AddSettlement({ groupId, members, onComplete, onCancel }: AddSettlementProps) {
-  const [fromUserId, setFromUserId] = useState('');
-  const [toUserId, setToUserId] = useState('');
+export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId }: AddSettlementProps) {
+  const [fromUserId, setFromUserId] = useState(initialFromId || '');
+  const [toUserId, setToUserId] = useState(initialToId || '');
   const [amount, setAmount] = useState<number | ''>('');
   const [loading, setLoading] = useState(false);
 

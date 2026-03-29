@@ -23,14 +23,14 @@ export default function GroupDetails() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [memberLoading, setMemberLoading] = useState(false);
-  
-  const [editingGroupId, setEditingGroupId] = useState(false);
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupCurrency, setEditGroupCurrency] = useState('');
 
   const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');
+  const [quickSettle, setQuickSettle] = useState<{from: string, to: string} | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -72,6 +72,7 @@ export default function GroupDetails() {
 
   const handleSettlementSaved = () => {
     setShowAddSettlement(false);
+    setQuickSettle(null);
     if (id) loadGroupData(id);
     alert('Payment successfully recorded!');
   };
@@ -104,12 +105,23 @@ export default function GroupDetails() {
   };
 
   const handleRemoveMember = async (userId: string) => {
-    if (!id || !window.confirm('Remove this member from the group?')) return;
+    const isLast = members.length === 1;
+    const msg = isLast 
+      ? 'WARNING: You are the last member. Leaving will permanently DELETE this group and all its data. Proceed?'
+      : 'Remove this member from the group?';
+      
+    if (!id || !window.confirm(msg)) return;
+    
     try {
-      await removeMember(id, userId);
-      loadGroupData(id);
+      if (isLast) {
+        await deleteGroup(id);
+        navigate('/dashboard');
+      } else {
+        await removeMember(id, userId);
+        loadGroupData(id);
+      }
     } catch(err: any) {
-      alert('Failed to remove member: ' + err.message);
+      alert('Action failed: ' + err.message);
     }
   };
 
@@ -134,14 +146,14 @@ export default function GroupDetails() {
   };
 
   const handleUpdateGroupSettings = async () => {
-    if (!editGroupName.trim()) return setEditingGroupId(false);
+    if (!editGroupName.trim()) return;
     try {
       await updateGroupSettings(id!, { name: editGroupName, currency: editGroupCurrency });
       setGroup({ ...group, name: editGroupName, currency: editGroupCurrency });
+      alert('Settings updated!');
     } catch(err) {
       alert('Failed to update group settings');
     }
-    setEditingGroupId(false);
   };
 
 
@@ -167,311 +179,259 @@ export default function GroupDetails() {
       )}
 
       <div className="np-flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        {editingGroupId ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1 }}>
-            <input 
-              value={editGroupName}
-              onChange={e => setEditGroupName(e.target.value)}
-              style={{ background: 'transparent', border: '1px solid var(--text-accent)', color: 'white', fontSize: '1.2rem', width: '100%', outline: 'none', fontFamily: 'inherit', padding: '0.2rem' }}
-              autoFocus
-              placeholder="Group Name"
-            />
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <select
-                value={editGroupCurrency}
-                onChange={e => setEditGroupCurrency(e.target.value)}
-                style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-color)', color: 'white', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit', padding: '0.2rem' }}
-              >
-                {COMMON_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <button 
-                onClick={handleUpdateGroupSettings} 
-                style={{ background: 'var(--text-accent)', color: 'black', border: 'none', cursor: 'pointer', padding: '0.2rem 0.75rem', fontWeight: 'bold' }}
-              >
-                SAVE
-              </button>
-              <button 
-                onClick={() => setEditingGroupId(false)} 
-                style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-              >
-                CANCEL
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <h1 className="np-title" style={{ margin: 0, border: 'none' }}>{group.name}</h1>
-            <button onClick={() => { setEditGroupName(group.name); setEditGroupCurrency(group.currency); setEditingGroupId(true); }} style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>✏️</button>
-          </div>
-        )}
+        <h1 className="np-title" style={{ margin: 0, border: 'none' }}>{group.name}</h1>
         <BackButton fallback="/dashboard" />
       </div>
 
-      <div className="np-section" style={{ padding: '1rem' }}>
-        <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>Currency: {group.currency}</p>
-        <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>Members: {members.length}</p>
-        
-      {showAddExpense && (
-        <AddExpense 
-          groupId={id!} 
-          members={members} 
-          onComplete={handleExpenseSaved} 
-          onCancel={() => { setShowAddExpense(false); setEditingExpense(null); }} 
-          editExpenseId={editingExpense?.id}
-          initialData={editingExpense}
-        />
-      )}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--border-color)' }}>
+        <button 
+          onClick={() => setActiveTab('expenses')}
+          style={{ 
+            padding: '0.75rem 1rem', 
+            background: activeTab === 'expenses' ? 'var(--bg-dark)' : 'transparent', 
+            color: activeTab === 'expenses' ? 'var(--text-accent)' : 'var(--text-secondary)',
+            border: 'none',
+            borderBottom: activeTab === 'expenses' ? '3px solid var(--text-accent)' : '3px solid transparent',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            textTransform: 'uppercase'
+          }}
+        >
+          Expenses
+        </button>
+        <button 
+          onClick={() => setActiveTab('management')}
+          style={{ 
+            padding: '0.75rem 1rem', 
+            background: activeTab === 'management' ? 'var(--bg-dark)' : 'transparent', 
+            color: activeTab === 'management' ? 'var(--text-accent)' : 'var(--text-secondary)',
+            border: 'none',
+            borderBottom: activeTab === 'management' ? '3px solid var(--text-accent)' : '3px solid transparent',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            textTransform: 'uppercase'
+          }}
+        >
+          Management
+        </button>
       </div>
-      {(!showAddExpense && !showAddMember && !showAddSettlement) && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-          <NeoButton variant="primary" onClick={() => setShowAddExpense(true)}>Add Expense</NeoButton>
-          <NeoButton style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }} onClick={() => setShowAddSettlement(true)}>Settle Up</NeoButton>
-          <NeoButton style={{ gridColumn: 'span 2', borderColor: 'var(--text-secondary)', color: 'var(--text-secondary)' }} onClick={() => setShowAddMember(true)}>Invite Member</NeoButton>
-        </div>
-      )}
-      {showAddMember && (
-        <div className="np-section" style={{ borderStyle: 'solid', borderColor: 'var(--text-accent)' }}>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Invite Member</h2>
-          <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input 
-              type="email" 
-              required 
-              placeholder="user@example.com" 
-              value={newMemberEmail} 
-              onChange={e => setNewMemberEmail(e.target.value)}
-              style={{ padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'var(--text-primary)', outline: 'none' }}
-            />
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={memberLoading}>
-                {memberLoading ? 'Inviting...' : 'Add via Email'}
-              </NeoButton>
-              <NeoButton type="button" onClick={() => setShowAddMember(false)} disabled={memberLoading}>
-                Cancel
-              </NeoButton>
-            </div>
-          </form>
-        </div>
-      )}
 
-      {showAddSettlement && (
-        <AddSettlement 
-          groupId={group.id} 
-          members={members} 
-          onComplete={handleSettlementSaved} 
-          onCancel={() => setShowAddSettlement(false)} 
-        />
-      )}
-
-      <div className="np-grid-desktop">
-        
-        {/* Left Column: People & Accounting */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="np-section" style={{ borderStyle: 'dashed', marginBottom: 0 }}>
-            <div className="np-flex-between" style={{ marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.1rem', margin: 0, textTransform: 'uppercase' }}>Members</h2>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {members.map(m => {
-                const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-                const label = profile?.display_name || profile?.email || m.user_id || 'Unknown';
-                return (
-                  <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                    <span>{label}</span>
-                    <button 
-                      onClick={() => handleRemoveMember(m.user_id)} 
-                      style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} 
-                      title="Remove Member"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+      {activeTab === 'expenses' ? (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+            {!showAddExpense && (
+              <NeoButton variant="primary" onClick={() => setShowAddExpense(true)} style={{ width: '100%' }}>
+                + Add Expense
+              </NeoButton>
+            )}
+            
+            {showAddExpense && (
+              <AddExpense 
+                groupId={id!} 
+                members={members} 
+                onComplete={handleExpenseSaved} 
+                onCancel={() => { setShowAddExpense(false); setEditingExpense(null); }} 
+                editExpenseId={editingExpense?.id}
+                initialData={editingExpense}
+              />
+            )}
           </div>
 
-          <div className="np-section" style={{ borderStyle: 'dashed', marginBottom: 0 }}>
-            <div className="np-flex-between" style={{ marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.1rem', margin: 0, textTransform: 'uppercase' }}>Balances</h2>
+          <div className="np-grid-desktop">
+            <div className="np-section" style={{ borderStyle: 'dashed' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Recent Records</h2>
+              {expenses.length === 0 ? (
+                <p className="np-text-muted" style={{ textAlign: 'center' }}>No expenses logged.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>
+                  {expenses.map((e: any) => (
+                    <div key={e.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 'bold' }}>{e.description}</span>
+                          <button 
+                            onClick={() => { setEditingExpense(e); setShowAddExpense(true); }} 
+                            style={{ background: 'transparent', color: 'var(--text-accent)', border: 'none', cursor: 'pointer', padding: 0 }} 
+                            title="Edit"
+                          >
+                            ✎
+                          </button>
+                        </div>
+                        <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{new Date(e.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
+                        <button onClick={() => handleDeleteExpense(e.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem' }}>✖</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {balances.length === 0 ? (
-              <p className="np-text-muted" style={{ textAlign: 'center' }}>No balances recorded yet.</p>
-            ) : (
+
+            <div className="np-section" style={{ borderStyle: 'dashed' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Payment History</h2>
+              {settlements.length === 0 ? (
+                 <p className="np-text-muted" style={{ textAlign: 'center' }}>No payments yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {settlements.map((s: any) => (
+                    <div key={s.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+                      <span style={{ fontSize: '0.9rem' }}>Record › {Number(s.amount).toFixed(2)}</span>
+                      <button onClick={() => handleDeleteSettlement(s.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem' }}>✖</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="np-grid-desktop">
+            <div className="np-section" style={{ borderStyle: 'dashed' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Member Balances</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {balances.map((b: any, idx: number) => {
                   const amt = Number(b.balance);
-                  const isPositive = amt > 0;
-                  const isZero = amt === 0;
                   return (
                     <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
                       <span>{b.profiles?.display_name || b.profiles?.email || 'Unknown'}</span>
-                      <span style={{ 
-                        fontWeight: 'bold', 
-                        color: isZero ? 'var(--text-secondary)' : (isPositive ? 'var(--text-accent)' : 'var(--text-danger)') 
-                      }}>
-                        {isPositive ? '+' : ''}{amt.toFixed(2)}
+                      <span style={{ fontWeight: 'bold', color: amt === 0 ? 'var(--text-secondary)' : (amt > 0 ? 'var(--text-accent)' : 'var(--text-danger)') }}>
+                        {amt > 0 ? '+' : ''}{amt.toFixed(2)}
                       </span>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
 
-          {balances.length > 0 && balances.some(b => Number(b.balance) !== 0) && (
-            <div className="np-section" style={{ borderStyle: 'dotted', borderColor: 'var(--text-accent)', marginBottom: 0 }}>
-              <h2 style={{ fontSize: '1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>How to Settle Up</h2>
+            <div className="np-section" style={{ borderStyle: 'dotted', borderColor: 'var(--text-accent)' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>Quick Settle Suggestions</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {(() => {
-                  const debtors = balances.filter(b => Number(b.balance) < -0.001).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) })).sort((a,b) => b.amount - a.amount);
-                  const creditors = balances.filter(b => Number(b.balance) > 0.001).map(b => ({ ...b, amount: Number(b.balance) })).sort((a,b) => b.amount - a.amount);
+                  const debtors = balances.filter(b => Number(b.balance) < -0.01).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) }));
+                  const creditors = balances.filter(b => Number(b.balance) > 0.01).map(b => ({ ...b, amount: Number(b.balance) }));
                   
-                  const optimized = [];
+                  const results = [];
                   let d = 0, c = 0;
-                  
                   while(d < debtors.length && c < creditors.length) {
-                    const debtor = debtors[d];
-                    const creditor = creditors[c];
-                    const settleAmt = Math.min(debtor.amount, creditor.amount);
-                    
-                    if (settleAmt > 0.001) {
-                      optimized.push({
-                        from: debtor.profiles?.display_name || debtor.profiles?.email || 'Someone',
-                        to: creditor.profiles?.display_name || creditor.profiles?.email || 'Someone',
-                        amount: settleAmt
-                      });
-                    }
-                    
-                    debtor.amount -= settleAmt;
-                    creditor.amount -= settleAmt;
-                    
-                    if (debtor.amount < 0.001) d++;
-                    if (creditor.amount < 0.001) c++;
+                    const amt = Math.min(debtors[d].amount, creditors[c].amount);
+                    results.push({ from: debtors[d], to: creditors[c], amount: amt });
+                    debtors[d].amount -= amt;
+                    creditors[c].amount -= amt;
+                    if (debtors[d].amount < 0.01) d++;
+                    if (creditors[c].amount < 0.01) c++;
                   }
-                  
-                  if (optimized.length === 0) return <p className="np-text-muted" style={{ fontSize: '0.85rem' }}>All debts are incredibly small penny balances.</p>;
-                  
-                  return optimized.map((opt, idx) => (
-                    <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', background: 'var(--bg-dark)', borderLeft: '3px solid var(--text-accent)' }}>
-                      <span style={{ fontSize: '0.9rem' }}>
-                        <strong style={{ color: 'var(--text-danger)' }}>{opt.from}</strong> owes <strong style={{ color: 'var(--text-accent)' }}>{opt.to}</strong>
-                      </span>
-                      <span style={{ fontWeight: 'bold' }}>
-                        {group.currency} {opt.amount.toFixed(2)}
-                      </span>
+
+                  if (results.length === 0) return <p className="np-text-muted">Everyone is settled! ✔</p>;
+
+                  return results.map((r, i) => (
+                    <div key={i} className="np-flex-between" style={{ padding: '0.5rem', background: 'var(--bg-dark)', borderLeft: '3px solid var(--text-accent)' }}>
+                      <span style={{ fontSize: '0.85rem' }}>{r.from.profiles?.display_name || 'User'} owes {r.to.profiles?.display_name || 'User'}</span>
+                      <button 
+                        onClick={() => { 
+                          setQuickSettle({ from: r.from.user_id, to: r.to.user_id }); 
+                          setShowAddSettlement(true); 
+                        }}
+                        style={{ background: 'var(--text-accent)', color: 'black', border: 'none', padding: '0.2rem 0.5rem', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.75rem' }}
+                      >
+                        SETTLE › {r.amount.toFixed(2)}
+                      </button>
                     </div>
                   ));
                 })()}
               </div>
             </div>
+          </div>
+
+          {showAddSettlement && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <AddSettlement 
+                groupId={group.id} 
+                members={members} 
+                initialFromId={quickSettle?.from}
+                initialToId={quickSettle?.to}
+                onComplete={handleSettlementSaved} 
+                onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
+              />
+            </div>
           )}
-        </div>
 
-        {/* Right Column: Ledger History */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="np-section" style={{ borderStyle: 'dashed', marginBottom: 0 }}>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Recent Expenses</h2>
-            {expenses.length === 0 ? (
-              <p className="np-text-muted" style={{ textAlign: 'center' }}>No expenses logged.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '450px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                {expenses.map((e: any) => (
-                  <div key={e.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 'bold' }}>{e.description}</span>
-                          <button 
-                            onClick={() => { setEditingExpense(e); setShowAddExpense(true); }} 
-                            style={{ background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer', padding: 0 }} 
-                            title="Edit Full Expense"
-                          >
-                            ✏️
-                          </button>
-                        </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.25rem' }}>
-                        {e.payments && e.payments.length === 1 && (() => {
-                          const p = e.payments[0];
-                          const prof = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
-                          return (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                              Paid by {prof?.display_name || prof?.email || 'Someone'}
-                            </span>
-                          );
-                        })()}
-                        {e.payments && e.payments.length > 1 && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                            Paid by {e.payments.length} people
-                          </span>
-                        )}
-                        <span className="np-text-muted" style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                          {new Date(e.created_at).toLocaleString()}
-                        </span>
+          <div className="np-section" style={{ marginTop: '2rem', borderStyle: 'solid', borderColor: '#333' }}>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>⚙ Group Management Zone</h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+              <div>
+                <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>CONFIGURE GROUP</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <input 
+                    value={editGroupName}
+                    onChange={e => setEditGroupName(e.target.value)}
+                    placeholder={group.name}
+                    style={{ background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', padding: '0.75rem', outline: 'none' }}
+                  />
+                  <select
+                    value={editGroupCurrency}
+                    onChange={e => setEditGroupCurrency(e.target.value)}
+                    style={{ background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', padding: '0.75rem', outline: 'none' }}
+                  >
+                    {COMMON_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <NeoButton onClick={handleUpdateGroupSettings} variant="primary" style={{ height: '3rem' }}>Update General Settings</NeoButton>
+                </div>
+              </div>
+
+              <div>
+                <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>ADMINISTRATIVE ACTIONS</p>
+                {!showAddMember ? (
+                  <NeoButton onClick={() => setShowAddMember(true)} style={{ width: '100%', marginBottom: '1rem' }}>+ Invite New Member</NeoButton>
+                ) : (
+                  <form onSubmit={handleAddMember} style={{ marginBottom: '1rem' }}>
+                     <input 
+                        type="email" 
+                        required 
+                        placeholder="Invite by email..." 
+                        value={newMemberEmail} 
+                        onChange={e => setNewMemberEmail(e.target.value)}
+                        style={{ width: '100%', padding: '0.75rem', marginBottom: '0.5rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white' }}
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={memberLoading}>Submit</NeoButton>
+                        <NeoButton type="button" onClick={() => setShowAddMember(false)}>Cancel</NeoButton>
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 'bold', marginRight: '0.5rem' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
-                      <button onClick={() => handleDeleteExpense(e.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} title="Delete Expense">
-                        🗑️
-                      </button>
-                    </div>
+                  </form>
+                )}
+
+                <div style={{ marginTop: '1rem', borderTop: '1px solid #333', paddingTop: '1rem' }}>
+                  <p className="np-text-muted" style={{ marginBottom: '0.5rem', fontSize: '0.7rem' }}>EXISTING MEMBERS</p>
+                  <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                    {members.map(m => (
+                      <div key={m.user_id} className="np-flex-between" style={{ padding: '0.4rem 0', opacity: 0.8 }}>
+                        <span style={{ fontSize: '0.85rem' }}>{m.profiles?.display_name || m.profiles?.email}</span>
+                        <button onClick={() => handleRemoveMember(m.user_id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', fontSize: '0.9rem', cursor: 'pointer' }}>⌧ Remove</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+            </div>
+
+            <div style={{ marginTop: '2.5rem', borderTop: '2px solid var(--text-danger)', paddingTop: '1.5rem' }}>
+               <p style={{ color: 'var(--text-danger)', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 'bold' }}>DANGER ZONE</p>
+               <NeoButton 
+                 variant="danger" 
+                 style={{ width: '100%' }}
+                 onClick={handleDeleteGroup}
+               >
+                 Destroy Group Data Permanently
+               </NeoButton>
+            </div>
           </div>
-
-          <div className="np-section" style={{ borderStyle: 'dashed', marginBottom: 0 }}>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>Settlements</h2>
-            {settlements.length === 0 ? (
-              <p className="np-text-muted" style={{ textAlign: 'center' }}>No settlements yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                {settlements.map((s: any) => {
-                  const fromM = members.find(m => m.user_id === s.from_user_id);
-                  const toM = members.find(m => m.user_id === s.to_user_id);
-                  
-                  const fromProf = Array.isArray(fromM?.profiles) ? fromM?.profiles[0] : fromM?.profiles;
-                  const toProf = Array.isArray(toM?.profiles) ? toM?.profiles[0] : toM?.profiles;
-                  
-                  const fromName = fromProf?.display_name || fromProf?.email || 'Someone';
-                  const toName = toProf?.display_name || toProf?.email || 'Someone';
-                  
-                  return (
-                    <div key={s.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
-                        <span style={{ fontWeight: 'bold' }}>{fromName} paid {toName}</span>
-                        <span className="np-text-muted" style={{ fontSize: '0.8rem' }}>
-                          {new Date(s.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 'bold', color: 'var(--text-accent)', marginRight: '0.5rem' }}>
-                          {group.currency} {Number(s.amount).toFixed(2)}
-                        </span>
-                        <button onClick={() => handleDeleteSettlement(s.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem', padding: '0' }} title="Delete Settlement">
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-
-      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-         <NeoButton 
-           variant="danger" 
-           style={{ width: '100%' }}
-           onClick={handleDeleteGroup}
-         >
-           Delete Group Permanently
-         </NeoButton>
-      </div>
-
+        </>
+      )}
     </div>
   );
 }

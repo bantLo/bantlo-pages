@@ -183,15 +183,11 @@ export default function Dashboard() {
           <p className="np-text-muted">Create a Group or Add a friend to start splitting bills entirely offline natively!</p>
         </div>
       ) : (
-        <div className="np-grid-desktop">
+        <div className="np-grid-desktop" style={{ gridTemplateColumns: friendGroups.length > 0 ? '1fr 1.5fr' : '1fr' }}>
           
-          <div>
-            <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (1-on-1)</p>
-            {friendGroups.length === 0 ? (
-              <div className="np-section" style={{ borderStyle: 'dotted', opacity: 0.5 }}>
-                <p style={{ margin: 0, fontSize: '0.85rem' }}>No friend splits. Add someone by email!</p>
-              </div>
-            ) : (
+          {friendGroups.length > 0 && (
+            <div>
+              <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (1-on-1)</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {friendGroups.map(g => (
                   <Link 
@@ -204,13 +200,13 @@ export default function Dashboard() {
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
                       </div>
-                      <span style={{ color: 'var(--text-accent)' }}>❯</span>
+                      <span style={{ color: 'var(--text-accent)' }}>›</span>
                     </div>
                   </Link>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div>
             <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Ledger Groups</p>
@@ -232,7 +228,7 @@ export default function Dashboard() {
                         <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
                         <small className="np-text-muted">Currency: {g.currency}</small>
                       </div>
-                      <span style={{ color: 'var(--text-primary)' }}>❯</span>
+                      <span style={{ color: 'var(--text-primary)' }}>›</span>
                     </div>
                   </Link>
                 ))}

@@ -171,8 +171,10 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
   };
 
   return (
-    <form onSubmit={handleSubmit} className="np-section" style={{ borderColor: 'var(--text-accent)' }}>
-      <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Add Expense</h3>
+    <form onSubmit={handleSubmit} className="np-section" style={{ borderColor: editExpenseId ? 'var(--text-accent)' : 'var(--border-color)', borderStyle: editExpenseId ? 'solid' : 'dashed' }}>
+      <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', color: editExpenseId ? 'var(--text-accent)' : 'inherit' }}>
+        {editExpenseId ? '✎ Edit Record' : 'Add Expense'}
+      </h3>
       
       <div style={{ marginBottom: '1rem' }}>
         <input 
@@ -304,7 +306,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
 
       <div style={{ display: 'flex', gap: '1rem' }}>
         <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={loading || (splitType === 1 && exactRemaining !== 0) || (payerType === 'multiple' && multiPayerRemaining !== 0)}>
-          {loading ? 'Processing...' : 'Save Matrix'}
+          {loading ? 'Processing...' : (editExpenseId ? 'Update Record' : 'Save Matrix')}
         </NeoButton>
         <NeoButton type="button" onClick={onCancel} disabled={loading}>Cancel</NeoButton>
       </div>
