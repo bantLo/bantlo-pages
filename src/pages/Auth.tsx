@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import NeoButton from '../components/NeoButton';
 import CacheManagerModal from '../components/CacheManagerModal';
 import Logo from '../components/Logo';
+import { useRef } from 'react';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ export default function Auth() {
   const [isPWA, setIsPWA] = useState(false);
   const [showCacheModal, setShowCacheModal] = useState(false);
   const [isSignedUp, setIsSignedUp] = useState(false);
+  const isSubmitting = useRef(false);
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
@@ -24,15 +26,20 @@ export default function Auth() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
+    
+    isSubmitting.current = true;
     setLoading(true);
     setMessage(null);
+
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Safely nuke any lingering PWA IndexedDB data from previous users
     indexedDB.deleteDatabase('bantlo-data-cache-v1');
 
     try {
       if (viewState === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
       } else if (viewState === 'signup') {
         if (!name.trim()) throw new Error('Please enter your full name.');
@@ -40,7 +47,7 @@ export default function Auth() {
         if (password !== confirmPassword) throw new Error('Passwords do not match.');
         
         const { error } = await supabase.auth.signUp({ 
-          email, 
+          email: normalizedEmail, 
           password,
           options: {
             data: { full_name: name },
@@ -49,18 +56,26 @@ export default function Auth() {
         });
         if (error) throw error;
         setIsSignedUp(true);
-        setMessage({ text: `Check the email ${email} to confirm your account!`, type: 'success' });
+        setMessage({ text: `Check the email ${normalizedEmail} to confirm your account!`, type: 'success' });
       } else if (viewState === 'forgot_password') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
           redirectTo: window.location.origin
         });
         if (error) throw error;
         setMessage({ text: 'Password reset link sent! Check your email.', type: 'success' });
       }
     } catch (error: any) {
-      setMessage({ text: error.message || 'Authentication failed', type: 'error' });
+      let errorText = error.message || 'Authentication failed';
+      
+      // Friendly handling for shared IP rate limits
+      if (errorText.toLowerCase().includes('rate limit') || error.status === 429) {
+        errorText = "Security Rate Limit! If you're on a shared WiFi, please try using mobile data or wait a few minutes before retrying.";
+      }
+      
+      setMessage({ text: errorText, type: 'error' });
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 

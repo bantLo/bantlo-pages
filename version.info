@@ -1,5 +1,5 @@
 {
-  "version": "1.1.2",
-  "message": "Hardened Version Sync: Automated Root-to-Public Overwrite for Stable Edge Deployment",
-  "published_at": "2026-03-29T13:58:30.000Z"
+  "version": "1.1.3",
+  "message": "Auth Hardening: Global Rate-Limit Detection and Submission Lock for Mobile Privacy",
+  "published_at": "2026-03-29T14:06:15.000Z"
 }
