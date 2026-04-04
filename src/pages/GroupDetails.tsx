@@ -33,7 +33,7 @@ export default function GroupDetails() {
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [editingSettlement, setEditingSettlement] = useState<any>(null);
   const [viewingExpense, setViewingExpense] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'management'>('expenses');
   const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
 
@@ -305,7 +305,7 @@ export default function GroupDetails() {
         <BackButton fallback="/dashboard" />
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--border-color)' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid var(--border-color)', flexWrap: 'wrap' }}>
         <button 
           onClick={() => setActiveTab('expenses')}
           style={{ 
@@ -316,11 +316,27 @@ export default function GroupDetails() {
             borderBottom: activeTab === 'expenses' ? '3px solid var(--text-accent)' : '3px solid transparent',
             fontWeight: 'bold',
             cursor: 'pointer',
-            fontSize: '0.9rem',
+            fontSize: '0.85rem',
             textTransform: 'uppercase'
           }}
         >
           Expenses
+        </button>
+        <button 
+          onClick={() => setActiveTab('balances')}
+          style={{ 
+            padding: '0.75rem 1rem', 
+            background: activeTab === 'balances' ? 'var(--bg-dark)' : 'transparent', 
+            color: activeTab === 'balances' ? 'var(--text-accent)' : 'var(--text-secondary)',
+            border: 'none',
+            borderBottom: activeTab === 'balances' ? '3px solid var(--text-accent)' : '3px solid transparent',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            textTransform: 'uppercase'
+          }}
+        >
+          Balances
         </button>
         <button 
           onClick={() => setActiveTab('management')}
@@ -332,7 +348,7 @@ export default function GroupDetails() {
             borderBottom: activeTab === 'management' ? '3px solid var(--text-accent)' : '3px solid transparent',
             fontWeight: 'bold',
             cursor: 'pointer',
-            fontSize: '0.9rem',
+            fontSize: '0.85rem',
             textTransform: 'uppercase'
           }}
         >
@@ -340,7 +356,7 @@ export default function GroupDetails() {
         </button>
       </div>
 
-      {activeTab === 'expenses' ? (
+      {activeTab === 'expenses' && (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
             {!showAddExpense && (
@@ -453,7 +469,9 @@ export default function GroupDetails() {
             </div>
           </div>
         </>
-      ) : (
+      )}
+
+      {activeTab === 'balances' && (
         <>
           <div className="np-grid-desktop">
             <div className="np-section" style={{ borderStyle: 'dashed' }}>
@@ -531,80 +549,96 @@ export default function GroupDetails() {
               />
             </div>
           )}
+        </>
+      )}
 
-          <div className="np-section" style={{ marginTop: '2rem', borderStyle: 'solid', borderColor: '#333' }}>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>⚙ Group Management Zone</h2>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
-              <div>
-                <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>CONFIGURE GROUP</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <input 
-                    value={editGroupName}
-                    onChange={e => setEditGroupName(e.target.value)}
-                    placeholder={group.name}
-                    style={{ background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', padding: '0.75rem', outline: 'none' }}
-                  />
-                  <select
-                    value={editGroupCurrency}
-                    onChange={e => setEditGroupCurrency(e.target.value)}
-                    style={{ background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', padding: '0.75rem', outline: 'none' }}
-                  >
-                    {COMMON_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <NeoButton onClick={handleUpdateGroupSettings} variant="primary" style={{ height: '3rem' }}>Update General Settings</NeoButton>
-                </div>
-              </div>
-
-              <div>
-                <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>ADMINISTRATIVE ACTIONS</p>
-                
-                <div style={{ marginBottom: '2rem' }}>
-                  <NeoButton onClick={handleGenerateInvite} style={{ width: '100%', marginBottom: '0.5rem', borderColor: 'var(--text-accent)' }}>
-                    {inviteLink ? 'Regenerate Invite Link' : 'Generate Invite Link'}
-                  </NeoButton>
-                  {inviteLink && (
-                    <div style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.3)', border: '1px dashed var(--text-accent)', fontSize: '0.75rem', overflowWrap: 'break-word', color: 'var(--text-accent)' }}>
-                      {inviteLink}
-                    </div>
-                  )}
-                  <p className="np-text-muted" style={{ fontSize: '0.65rem', marginTop: '0.25rem' }}>Links expire automatically after 24 hours.</p>
-                </div>
-
+      {activeTab === 'management' && (
+        <div className="np-section" style={{ borderStyle: 'solid', borderColor: '#333' }}>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>⚙ Group Management Zone</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* 1. Administrative Actions */}
+            <div>
+              <p className="np-text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.8rem' }}>ADMINISTRATIVE ACTIONS</p>
+              
+              {/* Add via Email Flow */}
+              <div style={{ marginBottom: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--text-accent)' }}>
+                <p className="np-text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.75rem', lineHeight: '1.4' }}>
+                  If you know your friend's <strong>bantLo email</strong>, you can add them directly without creating an invite link.
+                </p>
                 {!showAddMember ? (
-                  <NeoButton onClick={() => setShowAddMember(true)} style={{ width: '100%', marginBottom: '1rem' }}>+ Invite via Email</NeoButton>
+                  <NeoButton variant="primary" onClick={() => setShowAddMember(true)} style={{ width: '100%', height: '2.5rem', fontSize: '0.85rem' }}>+ Add via email</NeoButton>
                 ) : (
-                  <form onSubmit={handleAddMember} style={{ marginBottom: '1rem' }}>
+                  <form onSubmit={handleAddMember}>
                      <input 
                         type="email" 
                         required 
-                        placeholder="Invite by email..." 
+                        placeholder="Friend's email..." 
                         value={newMemberEmail} 
                         onChange={e => setNewMemberEmail(e.target.value)}
                         style={{ width: '100%', padding: '0.75rem', marginBottom: '0.5rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white' }}
                       />
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={memberLoading}>Submit</NeoButton>
+                        <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={memberLoading}>Add Member</NeoButton>
                         <NeoButton type="button" onClick={() => setShowAddMember(false)}>Cancel</NeoButton>
                       </div>
                   </form>
                 )}
+              </div>
 
-                <div style={{ marginTop: '1rem', borderTop: '1px solid #333', paddingTop: '1rem' }}>
-                  <p className="np-text-muted" style={{ marginBottom: '0.5rem', fontSize: '0.7rem' }}>EXISTING MEMBERS</p>
-                  <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
-                    {members.map(m => (
-                      <div key={m.user_id} className="np-flex-between" style={{ padding: '0.4rem 0', opacity: 0.8 }}>
-                        <span style={{ fontSize: '0.85rem' }}>{m.profiles?.display_name || m.profiles?.email}</span>
-                        <button onClick={() => handleRemoveMember(m.user_id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', fontSize: '0.9rem', cursor: 'pointer' }}>⌧ Remove</button>
-                      </div>
-                    ))}
+              {/* Invite Link Flow */}
+              <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--text-secondary)' }}>
+                <p className="np-text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.75rem', lineHeight: '1.4' }}>
+                  If they don't have a bantLo account or you don't know their email, you can create an invite link.
+                </p>
+                <NeoButton onClick={handleGenerateInvite} style={{ width: '100%', height: '2.5rem', fontSize: '0.85rem', borderColor: 'var(--border-color)' }}>
+                  {inviteLink ? 'Regenerate Invite Link' : 'Generate Invite Link'}
+                </NeoButton>
+                {inviteLink && (
+                  <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.3)', border: '1px dashed var(--text-accent)', fontSize: '0.7rem', overflowWrap: 'break-word', color: 'var(--text-accent)', marginTop: '0.5rem' }}>
+                    {inviteLink}
                   </div>
-                </div>
+                )}
+                <p className="np-text-muted" style={{ fontSize: '0.65rem', marginTop: '0.5rem' }}>Links expire automatically after 24 hours.</p>
               </div>
             </div>
 
-            <div style={{ marginTop: '2.5rem', borderTop: '2px solid var(--text-danger)', paddingTop: '1.5rem' }}>
+            {/* 2. Update Group Settings */}
+            <div style={{ borderTop: '1px solid #333', paddingTop: '1.5rem' }}>
+              <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem' }}>UPDATE GROUP NAME</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <input 
+                  value={editGroupName}
+                  onChange={e => setEditGroupName(e.target.value)}
+                  placeholder={group.name}
+                  style={{ background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', padding: '0.75rem', outline: 'none' }}
+                />
+                <select
+                  value={editGroupCurrency}
+                  onChange={e => setEditGroupCurrency(e.target.value)}
+                  style={{ background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', padding: '0.75rem', outline: 'none' }}
+                >
+                  {COMMON_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <NeoButton onClick={handleUpdateGroupSettings} variant="primary" style={{ height: '3rem' }}>Update Group Settings</NeoButton>
+              </div>
+            </div>
+
+            {/* 3. Existing Members */}
+            <div style={{ borderTop: '1px solid #333', paddingTop: '1.5rem' }}>
+              <p className="np-text-muted" style={{ marginBottom: '0.5rem', fontSize: '0.7rem' }}>EXISTING MEMBERS</p>
+              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                {members.map(m => (
+                  <div key={m.user_id} className="np-flex-between" style={{ padding: '0.4rem 0', opacity: 0.8 }}>
+                    <span style={{ fontSize: '0.85rem' }}>{m.profiles?.display_name || m.profiles?.email}</span>
+                    <button onClick={() => handleRemoveMember(m.user_id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', fontSize: '0.9rem', cursor: 'pointer' }}>⌧ Remove</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Danger Zone */}
+            <div style={{ marginTop: '1rem', borderTop: '2px solid var(--text-danger)', paddingTop: '1.5rem' }}>
                <p style={{ color: 'var(--text-danger)', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 'bold' }}>DANGER ZONE</p>
                <NeoButton 
                  variant="danger" 
@@ -615,7 +649,7 @@ export default function GroupDetails() {
                </NeoButton>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Transaction Detail Overlay */}
