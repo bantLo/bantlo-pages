@@ -62,6 +62,16 @@ export default function Settings() {
         <BackButton fallback="/dashboard" />
       </div>
 
+      <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '1.5rem' }}>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Account Control</p>
+        <NeoButton style={{ width: '100%', borderColor: 'var(--text-accent)' }} onClick={() => navigate('/settings/account')}>
+          Account Settings ›
+        </NeoButton>
+        <p className="np-text-muted" style={{ fontSize: '0.7rem', marginTop: '0.75rem' }}>
+          Update your display identity, security credentials, or manage deep account deletion.
+        </p>
+      </div>
+
       <div className="np-section" style={{ borderStyle: 'dashed' }}>
         <h3 className="np-title" style={{ fontSize: '1rem', marginBottom: '1.5rem' }}>BANTLO CORE INFRASTRUCTURE</h3>
         
@@ -153,16 +163,6 @@ export default function Settings() {
              {5 - tapCount} more taps to trigger local cache wipe!
           </p>
         )}
-      </div>
-
-      <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '1.5rem' }}>
-        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Account Control</p>
-        <NeoButton style={{ width: '100%', borderColor: 'var(--text-accent)' }} onClick={() => navigate('/settings/account')}>
-          Account Settings ›
-        </NeoButton>
-        <p className="np-text-muted" style={{ fontSize: '0.7rem', marginTop: '0.75rem' }}>
-          Update your display identity, security credentials, or manage deep account deletion.
-        </p>
       </div>
 
       <div className="np-section" style={{ textAlign: 'center', borderStyle: 'dotted' }}>

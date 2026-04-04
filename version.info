@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
-  "message": "Ledger Evolution: Atomic Transaction Sync & Infinite Scrolling Ledger deployed. Instant-on group details with local-first optimistic updates.",
-  "published_at": "2026-04-04T14:45:00.000Z"
+  "version": "1.5.1",
+  "message": "UX Refinement: 'Account Control' elevated to top position in Settings for prioritizing user security and identity access.",
+  "published_at": "2026-04-04T14:50:00.000Z"
 }
