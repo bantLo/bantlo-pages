@@ -30,6 +30,8 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
   const [splitType, setSplitType] = useState<0 | 1 | 2>(initialData?.split_type ?? 0);
   const [exactAmounts, setExactAmounts] = useState<Record<string, number>>({});
   const [shares, setShares] = useState<Record<string, number>>({});
+  const [includedInEqual, setIncludedInEqual] = useState<Record<string, boolean>>({});
+
   
   const [loading, setLoading] = useState(false);
 
@@ -47,7 +49,11 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       }
 
       // Handle Splits
-      if (initialData.split_type === 1) {
+      if (initialData.split_type === 0) {
+        const inc: Record<string, boolean> = {};
+        initialData.splits.forEach((s: any) => inc[s.user_id] = Number(s.amount_owed) > 0);
+        setIncludedInEqual(inc);
+      } else if (initialData.split_type === 1) {
         const ea: Record<string, number> = {};
         initialData.splits.forEach((s: any) => ea[s.user_id] = Number(s.amount_owed));
         setExactAmounts(ea);
@@ -73,15 +79,21 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
     let computed: Record<string, number> = {};
 
     if (splitType === 0) {
-      const perPerson = parseFloat((total / members.length).toFixed(2));
-      let runningTotal = 0;
-      members.forEach((m, i) => {
-        if (i === members.length - 1) {
-          computed[m.user_id] = parseFloat((total - runningTotal).toFixed(2));
-        } else {
-          computed[m.user_id] = perPerson;
-          runningTotal += perPerson;
-        }
+      const activeMembers = members.filter(m => includedInEqual[m.user_id] !== false);
+      if (activeMembers.length > 0) {
+        const perPerson = parseFloat((total / activeMembers.length).toFixed(2));
+        let runningTotal = 0;
+        activeMembers.forEach((m, i) => {
+          if (i === activeMembers.length - 1) {
+            computed[m.user_id] = parseFloat((total - runningTotal).toFixed(2));
+          } else {
+            computed[m.user_id] = perPerson;
+            runningTotal += perPerson;
+          }
+        });
+      }
+      members.forEach(m => {
+        if (!computed[m.user_id]) computed[m.user_id] = 0;
       });
     } else if (splitType === 1) {
       computed = { ...exactAmounts };
@@ -305,7 +317,17 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
             <div key={m.user_id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
               <span style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
               
-              {splitType === 0 && <span style={{ fontFamily: 'monospace' }}>{computedSplits[m.user_id] || 0.00}</span>}
+              {splitType === 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontFamily: 'monospace' }}>{computedSplits[m.user_id] || 0.00}</span>
+                  <input 
+                    type="checkbox" 
+                    checked={includedInEqual[m.user_id] !== false}
+                    onChange={(e) => setIncludedInEqual(prev => ({...prev, [m.user_id]: e.target.checked}))}
+                    style={{ accentColor: 'var(--text-accent)', width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                  />
+                </div>
+              )}
               
               {splitType === 1 && (
                 <input 

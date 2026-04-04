@@ -1,5 +1,5 @@
 {
-  "version": "1.5.5",
-  "message": "Name Resolution Fixed: Deployed an intelligent client-side fallback linking the raw user IDs to the local member directory, replacing 'Unknown' records.",
-  "published_at": "2026-04-04T15:20:00.000Z"
+  "version": "1.5.6",
+  "message": "Expense Calculation UX: Added precise checkboxes to 'Equal Split' so you can quickly exclude specific individuals from a shared bill.",
+  "published_at": "2026-04-04T15:30:00.000Z"
 }
