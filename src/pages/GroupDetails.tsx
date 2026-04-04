@@ -63,6 +63,23 @@ export default function GroupDetails() {
     return <span className="np-text-muted">Settled</span>;
   };
 
+  const getSettlementNameString = (s: any) => {
+    const fromMember = members.find(m => m.user_id === s.from_user_id);
+    const toMember = members.find(m => m.user_id === s.to_user_id);
+    
+    const fromName = s.from_user_id === currentUserId ? 'You' : (fromMember?.profiles?.display_name || fromMember?.profiles?.email || 'Unknown').split(' ')[0];
+    const toName = s.to_user_id === currentUserId ? 'You' : (toMember?.profiles?.display_name || toMember?.profiles?.email || 'Unknown').split(' ')[0];
+    
+    return `${fromName} paid ${toName}`;
+  };
+
+  const summarizeSettlementForUser = (s: any) => {
+    if (!currentUserId) return null;
+    if (s.from_user_id === currentUserId) return <span style={{ color: 'var(--text-accent)' }}>Paid {Number(s.amount).toFixed(2)}</span>;
+    if (s.to_user_id === currentUserId) return <span style={{ color: 'var(--text-danger)' }}>Received {Number(s.amount).toFixed(2)}</span>;
+    return <span className="np-text-muted">Doesn't involve you</span>;
+  };
+
   const getPayerNameString = (expense: any) => {
     if (!expense.payments || expense.payments.length === 0) return 'Unknown paid';
     
@@ -400,11 +417,30 @@ export default function GroupDetails() {
               {settlements.length === 0 ? (
                  <p className="np-text-muted" style={{ textAlign: 'center' }}>No payments yet.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>
                   {settlements.map((s: any) => (
-                    <div key={s.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                      <span style={{ fontSize: '0.9rem' }}>Record › {Number(s.amount).toFixed(2)}</span>
-                      <button onClick={() => handleDeleteSettlement(s.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem' }}>✖</button>
+                    <div 
+                      key={s.id} 
+                      className="np-flex-between" 
+                      style={{ padding: '0.75rem 0.5rem', borderBottom: '1px solid #333', transition: 'background 0.2s' }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getSettlementNameString(s)}</span>
+                        <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{new Date(s.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.1rem' }}>
+                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{group.currency} {Number(s.amount).toFixed(2)}</span>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{summarizeSettlementForUser(s)}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleDeleteSettlement(s.id)} 
+                          style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.2rem' }}
+                          title="Delete Payment Record"
+                        >
+                          ✖
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

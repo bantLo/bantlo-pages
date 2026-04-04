@@ -1,5 +1,5 @@
 {
-  "version": "1.5.8",
-  "message": "Ledger Scannability UX: Cleaned up the personal 'Owed' indicators by stripping noise, and introduced dynamic Payer Name tags right beside the transaction dates so you can see who funded every expense without opening them.",
-  "published_at": "2026-04-04T15:55:00.000Z"
+  "version": "1.5.9",
+  "message": "Protocol Enhanced: Settlement and Payment Records now show clear 'Who paid Who' context and personalized standings (Owe/Owed). Verified that zero-balance states update instantaneously upon settling.",
+  "published_at": "2026-04-04T16:25:00.000Z"
 }
