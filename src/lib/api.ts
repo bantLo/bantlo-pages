@@ -17,8 +17,7 @@ export async function fetchUserGroups(userId: string) {
         ),
         user_standing:balances(balance)
       `)
-      .eq('user_id', userId)
-      .eq('user_standing.user_id', userId);
+      .eq('user_id', userId);
       
     if (error) throw error;
     

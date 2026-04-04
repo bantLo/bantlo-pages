@@ -21,14 +21,6 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
     }
   };
 
-  const handleClearDB = async () => {
-    await clearLocalDatabase();
-    localStorage.clear();
-    sessionStorage.clear();
-    alert('Offline database cleared! Reloading...');
-    window.location.assign('/');
-  };
-
   const handleClearBoth = async () => {
     await clearLocalDatabase();
     localStorage.clear();
@@ -63,10 +55,6 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <NeoButton type="button" onClick={handleClearApp} style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }}>
             Refresh UI Shell Only
-          </NeoButton>
-          
-          <NeoButton type="button" onClick={handleClearDB} style={{ borderColor: 'var(--text-accent)', color: 'var(--text-accent)' }}>
-            Wipe Offline DB Only
           </NeoButton>
           
           <NeoButton type="button" variant="danger" onClick={handleClearBoth}>
