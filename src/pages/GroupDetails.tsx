@@ -31,6 +31,7 @@ export default function GroupDetails() {
   const COMMON_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [editingSettlement, setEditingSettlement] = useState<any>(null);
   const [viewingExpense, setViewingExpense] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');
   const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
@@ -358,6 +359,20 @@ export default function GroupDetails() {
                 initialData={editingExpense}
               />
             )}
+
+            {editingSettlement && (
+              <AddSettlement 
+                groupId={id!}
+                members={members}
+                editId={editingSettlement.id}
+                initialFromId={editingSettlement.payments?.[0]?.user_id}
+                initialToId={editingSettlement.splits?.[0]?.user_id}
+                initialAmount={editingSettlement.amount}
+                onComplete={() => { setEditingSettlement(null); loadGroupData(id!); }}
+                onDelete={(sid) => { handleDeleteExpense(sid); setEditingSettlement(null); }}
+                onCancel={() => setEditingSettlement(null)}
+              />
+            )}
           </div>
 
           <div style={{ marginTop: '1.5rem', marginBottom: '3rem' }}>
@@ -383,21 +398,25 @@ export default function GroupDetails() {
                       onMouseLeave={(evt) => !e.is_settlement && (evt.currentTarget.style.background = 'transparent')}
                     >
                       {e.is_settlement ? (
-                        <>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                            <span style={{ fontWeight: 'bold' }}>{getSettlementNameString(e)}</span>
-                            <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>• {new Date(e.created_at).toLocaleDateString()}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                            <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
-                            <button 
-                              onClick={(evt) => { evt.stopPropagation(); handleDeleteExpense(e.id); }} 
-                              style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '0.9rem' }}
-                            >
-                              ✖
-                            </button>
-                          </div>
-                        </>
+                        <div 
+                          style={{ 
+                            width: '100%', 
+                            fontSize: '0.8rem', 
+                            fontWeight: 'bold', 
+                            color: 'var(--text-accent)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                          onClick={(evt) => { evt.stopPropagation(); setEditingSettlement(e); }}
+                        >
+                          <span>
+                            {getSettlementNameString(e)} / {new Date(e.created_at).toLocaleDateString()}
+                          </span>
+                          <span>
+                            {group.currency} {Number(e.amount).toFixed(2)}
+                          </span>
+                        </div>
                       ) : (
                         <>
                           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>

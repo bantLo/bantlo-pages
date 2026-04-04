@@ -353,6 +353,19 @@ export async function deleteSettlement(settlementId: string) {
   if (error) throw error;
 }
 
+export async function updateSettlement(settlementId: string, amount: number) {
+  // 1. Update expense amount
+  const { error: e1 } = await supabase.from('expenses').update({ amount }).eq('id', settlementId);
+  if (e1) throw e1;
+
+  // 2. Update split and payment amount
+  const { error: e2 } = await supabase.from('expense_payments').update({ amount_paid: amount }).eq('expense_id', settlementId);
+  if (e2) throw e2;
+
+  const { error: e3 } = await supabase.from('expense_splits').update({ amount_owed: amount }).eq('expense_id', settlementId);
+  if (e3) throw e3;
+}
+
 export async function addFriendByEmail(email: string) {
   const { data, error } = await supabase.rpc('add_friend_by_email', { p_email: email });
   if (error) throw error;
