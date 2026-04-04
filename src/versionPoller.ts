@@ -2,13 +2,11 @@ import { useEffect } from 'react';
 
 const INSTALLED_VERSION_KEY = 'bantlo_installed_version';
 const LATEST_VERSION_KEY = 'bantlo_latest_server_version';
-const DEPLOYMENT_DELAY_MS = 2.5 * 60 * 1000; // 2.5 minute buffer for Cloudflare Sync
-
 export async function checkVersion() {
   try {
     // 1. Direct fetch from deployment site with cache-busting timestamp
-    let fetchUrl = `/version.info?t=${Date.now()}`;
-    let response = await fetch(fetchUrl, { cache: 'no-store' });
+    const fetchUrl = `/version.info?t=${Date.now()}`;
+    const response = await fetch(fetchUrl, { cache: 'no-store' });
     if (!response.ok) return null;
     
     const text = await response.text();
@@ -33,24 +31,15 @@ export async function checkVersion() {
       installedVersion = latestData.version;
     }
 
-    // 4. Update the "Latest Seen" record
+    // 4. Update the "Latest Seen" record (always update this so the UI can compare)
     localStorage.setItem(LATEST_VERSION_KEY, JSON.stringify(latestData));
 
-    // 5. Compare and Status logic
+    // 5. Compare and Status logic - IMMEDIATELY TRIGGER IF VERSION MISMATCH
     if (installedVersion !== latestData.version) {
-      console.log(`[Version Sync] Mismatch: Installed=${installedVersion}, Server=${latestData.version}`);
-      
-      const publishedAt = latestData.published_at ? new Date(latestData.published_at).getTime() : 0;
-      const isDeploymentReady = (Date.now() - publishedAt) >= DEPLOYMENT_DELAY_MS;
-
-      if (isDeploymentReady) {
-        latestData.status = 'Update Available';
-        // Auto-prompt logic (throttled by user interaction, usually checked in UI)
-      } else {
-        latestData.status = 'Syncing...';
-      }
+      console.log(`[Version Sync] NEW VERSION DETECTED: Installed=${installedVersion}, Server=${latestData.version}`);
+      latestData.isUpdateAvailable = true;
     } else {
-      latestData.status = 'Up to Date';
+      latestData.isUpdateAvailable = false;
     }
     
     latestData.installed_version = installedVersion;

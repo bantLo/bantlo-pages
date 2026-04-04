@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import NeoButton from '../components/NeoButton';
 import Logo from '../components/Logo';
+import UpdatePrompt from '../components/UpdatePrompt';
 import { supabase } from '../lib/supabase';
 import { fetchUserGroups, createGroup, addFriendByEmail } from '../lib/api';
 import { getCachedGroups } from '../lib/db';
@@ -143,6 +144,7 @@ export default function Dashboard() {
 
   return (
     <div className="np-container">
+      <UpdatePrompt />
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <Logo />
         <NeoButton to="/settings">Settings</NeoButton>

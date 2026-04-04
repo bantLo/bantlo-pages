@@ -15,7 +15,6 @@ export default function GroupDetails() {
   const [members, setMembers] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   
   const [expenseCount, setExpenseCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -105,7 +104,6 @@ export default function GroupDetails() {
     getExpensesCached(groupId, 20).then(cached => {
       if (cached && cached.length > 0) {
         setExpenses(cached);
-        setLoading(false);
       }
     }).catch(err => {
       console.warn('Cache load failed, bypassing to network:', err);
@@ -136,8 +134,6 @@ export default function GroupDetails() {
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -280,12 +276,36 @@ export default function GroupDetails() {
 
 
 
-  if (loading) return <div className="np-container"><p className="np-title" style={{ border: 'none', animation: 'pulse 1.5s infinite'}}>Loading group...</p></div>;
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+    }, 10000); // 10 second grace period
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!group) {
+    if (!timedOut) {
+      return (
+        <div className="np-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div style={{ marginBottom: '2rem', animation: 'pulse 2s infinite' }}>
+            <svg width="60" height="60" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 14V5C4 4.44772 4.44772 4 5 4H19C19.5523 4 20 4.44772 20 5V43C20 43.5523 19.5523 44 19 44H5C4.44772 44 4 43.5523 4 43V34" stroke="var(--text-accent)" strokeWidth="4" strokeLinecap="round"/>
+              <path d="M44 34V43C44 43.5523 43.5523 44 43 44H29C28.4477 44 28 43.5523 28 43V5C28 4.44772 28.4477 4 29 4H43C43.5523 4 44 4.44772 44 5V14" stroke="var(--text-accent)" strokeWidth="4" strokeLinecap="round"/>
+              <path d="M28 24L44 24.0132" stroke="var(--text-primary)" strokeWidth="4" strokeLinecap="round"/>
+              <path d="M4 24.0132L20 24" stroke="var(--text-primary)" strokeWidth="4" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <p className="np-title" style={{ border: 'none', fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Synchronizing Ledger...</p>
+        </div>
+      );
+    }
+
     return (
-      <div className="np-container">
-        <p className="np-text-danger">Group not found or inaccessible.</p>
+      <div className="np-container" style={{ textAlign: 'center', paddingTop: '5rem' }}>
+        <p className="np-text-danger" style={{ fontSize: '1.2rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>Group inaccessible or unavailable</p>
+        <p className="np-text-muted" style={{ marginBottom: '2rem' }}>This group might have been deleted or you don't have permission to view it.</p>
         <BackButton fallback="/dashboard" />
       </div>
     );
