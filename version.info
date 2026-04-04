@@ -1,5 +1,5 @@
 {
-  "version": "1.3.8",
-  "message": "Vault Protocol Enhanced: Security & Identity migrated to dedicated 'Account Settings' sub-page for high-sensitivity actions.",
-  "published_at": "2026-04-04T14:30:00.000Z"
+  "version": "1.4.0",
+  "message": "Dashboard Presence Protocol: Added real-time sync indicators for background ledger reconciliation.",
+  "published_at": "2026-04-04T14:40:00.000Z"
 }

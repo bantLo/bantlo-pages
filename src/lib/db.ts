@@ -63,6 +63,23 @@ export async function cacheGroupData(group: any) {
   await db.put('groups', group);
 }
 
+export async function getCachedGroups() {
+  const db = await getDB();
+  return db.getAll('groups');
+}
+
+export async function updateCachedGroupsSync(groups: any[]) {
+  const db = await getDB();
+  const tx = db.transaction('groups', 'readwrite');
+  // We keep existing entries that might not be in the fetch (if needed), 
+  // but usually for fresh lists we want the most recent from server to define reality.
+  // We'll update the ones we got.
+  for (const g of groups) {
+    await tx.store.put(g);
+  }
+  await tx.done;
+}
+
 export async function getCachedGroup(groupId: string) {
   const db = await getDB();
   return db.get('groups', groupId);

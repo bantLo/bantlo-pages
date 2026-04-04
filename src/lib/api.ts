@@ -33,16 +33,11 @@ export async function fetchUserGroups(userId: string) {
     }).filter(Boolean);
     
     try {
-      // Full sync: Clear local cache and re-fill with fresh server results
-      const db = await getDB();
-      await db.clear('groups');
-      const tx = db.transaction('groups', 'readwrite');
-      for (const g of validGroups) {
-        await tx.store.put(g);
-      }
-      await tx.done;
+      // Background Sync: Update local cache with fresh server results without wiping
+      const { updateCachedGroupsSync } = await import('./db');
+      await updateCachedGroupsSync(validGroups);
     } catch (dbError) {
-      console.error('Failed to sync groups to IndexedDB:', dbError);
+      console.error('Background sync failed:', dbError);
     }
     
     return validGroups;

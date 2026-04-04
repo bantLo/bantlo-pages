@@ -4,10 +4,12 @@ import NeoButton from '../components/NeoButton';
 import Logo from '../components/Logo';
 import { supabase } from '../lib/supabase';
 import { fetchUserGroups, createGroup, addFriendByEmail } from '../lib/api';
+import { getCachedGroups } from '../lib/db';
 
 export default function Dashboard() {
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -17,10 +19,64 @@ export default function Dashboard() {
   const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   useEffect(() => {
-    loadGroups();
+    // 1. Instant Load from Cache
+    getCachedGroups().then(cached => {
+      if (cached && cached.length > 0) {
+        setGroups(cached);
+        setLoading(false);
+      }
+      // 2. Background Revalidation
+      loadGroups();
+    });
+  }, []);
+
+  useEffect(() => {
+    let balanceSubscription: any;
+    let groupSubscription: any;
+
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Listen for balance changes for the current user
+      balanceSubscription = supabase
+        .channel('dashboard-balances')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'balances',
+          filter: `user_id=eq.${user.id}`
+        }, () => {
+          console.log('Realtime: Balance updated, syncing groups...');
+          loadGroups();
+        })
+        .subscribe();
+
+      // Listen for membership changes (e.g. added to a new group)
+      groupSubscription = supabase
+        .channel('dashboard-memberships')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'group_members',
+          filter: `user_id=eq.${user.id}`
+        }, () => {
+          console.log('Realtime: Membership updated, syncing groups...');
+          loadGroups();
+        })
+        .subscribe();
+    };
+
+    setupRealtime();
+
+    return () => {
+      if (balanceSubscription) supabase.removeChannel(balanceSubscription);
+      if (groupSubscription) supabase.removeChannel(groupSubscription);
+    };
   }, []);
 
   const loadGroups = async () => {
+    setIsSyncing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -32,6 +88,7 @@ export default function Dashboard() {
       console.error("Error loading groups:", e);
     } finally {
       setLoading(false);
+      setIsSyncing(false);
     }
   };
 
@@ -79,7 +136,22 @@ export default function Dashboard() {
       </div>
 
       <div className="np-flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h2 style={{ fontSize: '1.2rem', textTransform: 'uppercase' }}>Your Groups</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.2rem', textTransform: 'uppercase', margin: 0 }}>Your Groups</h2>
+          {isSyncing && !loading && (
+            <div 
+              style={{ 
+                width: '6px', 
+                height: '6px', 
+                borderRadius: '50%', 
+                background: 'var(--text-accent)',
+                boxShadow: '0 0 8px var(--text-accent)',
+                animation: 'pulse 1s infinite alternate'
+              }} 
+              title="Syncing ledger with cloud..."
+            />
+          )}
+        </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <NeoButton 
             variant="primary" 
