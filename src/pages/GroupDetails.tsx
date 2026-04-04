@@ -576,7 +576,8 @@ export default function GroupDetails() {
               <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.75rem', color: 'var(--text-accent)', borderBottom: '1px solid #333', paddingBottom: '0.4rem' }}>Funding (Who Paid)</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {viewingExpense.payments?.map((p: any, idx: number) => {
-                  const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                  const dbProfile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                  const profile = dbProfile || members.find(m => m.user_id === p.user_id)?.profiles;
                   return (
                     <div key={idx} className="np-flex-between" style={{ fontSize: '0.9rem' }}>
                       <span>{profile?.display_name || profile?.email || 'Unknown'}</span>
@@ -591,7 +592,8 @@ export default function GroupDetails() {
               <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid #333', paddingBottom: '0.4rem' }}>Distribution (Who Owes)</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {viewingExpense.splits?.map((s: any, idx: number) => {
-                  const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+                  const dbProfile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+                  const profile = dbProfile || members.find(m => m.user_id === s.user_id)?.profiles;
                   return (
                     <div key={idx} className="np-flex-between" style={{ fontSize: '0.9rem' }}>
                       <span>{profile?.display_name || profile?.email || 'Unknown'}</span>

@@ -1,5 +1,5 @@
 {
-  "version": "1.5.4",
-  "message": "Engine Stabilization: Reverted experimental deep-join structures and restored reliable parallelized balance tracking. Groups and Expenses are now guaranteed to load.",
-  "published_at": "2026-04-04T15:10:00.000Z"
+  "version": "1.5.5",
+  "message": "Name Resolution Fixed: Deployed an intelligent client-side fallback linking the raw user IDs to the local member directory, replacing 'Unknown' records.",
+  "published_at": "2026-04-04T15:20:00.000Z"
 }
