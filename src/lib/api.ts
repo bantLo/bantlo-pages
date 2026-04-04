@@ -15,13 +15,22 @@ export async function fetchUserGroups(userId: string) {
           currency,
           is_friend_group,
           updated_at
-        )
+        ),
+        user_standing:balances(balance)
       `)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('user_standing.user_id', userId);
       
     if (error) throw error;
     
-    const validGroups = data.map((membership: any) => membership.groups).filter(Boolean);
+    const validGroups = data.map((membership: any) => {
+      const g = membership.groups;
+      if (g) {
+        // Embed the standing for easier display
+        (g as any).standing = membership.user_standing?.[0]?.balance || 0;
+      }
+      return g;
+    }).filter(Boolean);
     
     try {
       // Full sync: Clear local cache and re-fill with fresh server results
@@ -123,7 +132,7 @@ export async function fetchRecentExpenses(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, description, amount, created_at, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
+      .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(10);

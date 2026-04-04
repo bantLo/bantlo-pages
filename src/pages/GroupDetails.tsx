@@ -29,6 +29,7 @@ export default function GroupDetails() {
   const COMMON_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
   const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [viewingExpense, setViewingExpense] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');
   const [quickSettle, setQuickSettle] = useState<{from: string, to: string} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
@@ -273,23 +274,21 @@ export default function GroupDetails() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>
                   {expenses.map((e: any) => (
-                    <div key={e.id} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
+                    <div 
+                      key={e.id} 
+                      className="np-flex-between" 
+                      onClick={() => setViewingExpense(e)}
+                      style={{ padding: '0.75rem 0.5rem', borderBottom: '1px solid #333', cursor: 'pointer', transition: 'background 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
                       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 'bold' }}>{e.description}</span>
-                          <button 
-                            onClick={() => { setEditingExpense(e); setShowAddExpense(true); }} 
-                            style={{ background: 'transparent', color: 'var(--text-accent)', border: 'none', cursor: 'pointer', padding: 0 }} 
-                            title="Edit"
-                          >
-                            ✎
-                          </button>
-                        </div>
+                        <span style={{ fontWeight: 'bold' }}>{e.description}</span>
                         <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{new Date(e.created_at).toLocaleDateString()}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
-                        <button onClick={() => handleDeleteExpense(e.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.2rem' }}>✖</button>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>›</span>
                       </div>
                     </div>
                   ))}
@@ -471,6 +470,114 @@ export default function GroupDetails() {
           </div>
         </>
       )}
+
+      {/* Transaction Detail Overlay */}
+      {viewingExpense && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, left: 0, width: '100%', height: '100%', 
+            background: 'rgba(0,0,0,0.85)', 
+            backdropFilter: 'blur(4px)',
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+          onClick={() => setViewingExpense(null)}
+        >
+          <div 
+            className="np-section" 
+            style={{ 
+              maxWidth: '450px', 
+              width: '100%', 
+              background: 'var(--bg-dark)', 
+              border: '4px solid var(--border-color)', 
+              boxShadow: '10px 10px 0px black',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', textTransform: 'uppercase', color: 'var(--text-accent)' }}>{viewingExpense.description}</h2>
+                <p className="np-text-muted" style={{ fontSize: '0.8rem', margin: 0 }}>Logged on {new Date(viewingExpense.created_at).toLocaleString()}</p>
+              </div>
+              <button 
+                onClick={() => setViewingExpense(null)}
+                style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer', padding: '0.5rem' }}
+              >
+                ✖
+              </button>
+            </div>
+
+            <div style={{ padding: '1rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', marginBottom: '1.5rem' }}>
+              <p className="np-text-muted" style={{ fontSize: '0.8rem', margin: '0 0 0.5rem 0' }}>TOTAL LOGGED</p>
+              <h3 style={{ fontSize: '2rem', margin: 0, fontWeight: 900 }}>{group.currency} {Number(viewingExpense.amount).toFixed(2)}</h3>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>
+                Split Logic: {viewingExpense.split_type === 0 ? 'Equal' : (viewingExpense.split_type === 1 ? 'Exact' : 'By Shares')}
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.75rem', color: 'var(--text-accent)', borderBottom: '1px solid #333', paddingBottom: '0.4rem' }}>Funding (Who Paid)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {viewingExpense.payments?.map((p: any, idx: number) => {
+                  const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+                  return (
+                    <div key={idx} className="np-flex-between" style={{ fontSize: '0.9rem' }}>
+                      <span>{profile?.display_name || profile?.email || 'Unknown'}</span>
+                      <span style={{ fontWeight: 'bold' }}>+ {Number(p.amount_paid).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '2rem' }}>
+              <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.75rem', color: 'var(--text-secondary)', borderBottom: '1px solid #333', paddingBottom: '0.4rem' }}>Distribution (Who Owes)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {viewingExpense.splits?.map((s: any, idx: number) => {
+                  const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+                  return (
+                    <div key={idx} className="np-flex-between" style={{ fontSize: '0.9rem' }}>
+                      <span>{profile?.display_name || profile?.email || 'Unknown'}</span>
+                      <span style={{ fontWeight: 'bold', color: 'var(--text-danger)' }}>- {Number(s.amount_owed).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <NeoButton 
+                onClick={() => { 
+                  setEditingExpense(viewingExpense); 
+                  setShowAddExpense(true); 
+                  setViewingExpense(null); 
+                }} 
+                variant="primary" 
+                style={{ flex: 1 }}
+              >
+                ✎ Edit Record
+              </NeoButton>
+              <NeoButton 
+                onClick={() => { 
+                  handleDeleteExpense(viewingExpense.id); 
+                  setViewingExpense(null); 
+                }} 
+                variant="danger" 
+                style={{ padding: '0.75rem 1rem' }}
+              >
+                ✖ Delete
+              </NeoButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }

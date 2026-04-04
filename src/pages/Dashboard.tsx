@@ -199,6 +199,15 @@ export default function Dashboard() {
                     <div className="np-flex-between">
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}>
+                          {Number(g.standing || 0) > 0.01 ? (
+                            <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>Owed: {g.currency} {Number(g.standing).toFixed(2)}</span>
+                          ) : Number(g.standing || 0) < -0.01 ? (
+                            <span style={{ color: 'var(--text-danger)', fontWeight: 'bold' }}>You owe: {g.currency} {Math.abs(Number(g.standing)).toFixed(2)}</span>
+                          ) : (
+                            <span className="np-text-muted">Settled ✔</span>
+                          )}
+                        </div>
                       </div>
                       <span style={{ color: 'var(--text-accent)' }}>›</span>
                     </div>
@@ -226,7 +235,15 @@ export default function Dashboard() {
                     <div className="np-flex-between">
                       <div>
                         <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
-                        <small className="np-text-muted">Currency: {g.currency}</small>
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.8rem' }}>
+                          {Number(g.standing || 0) > 0.01 ? (
+                            <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>Owed: {g.currency} {Number(g.standing).toFixed(2)}</span>
+                          ) : Number(g.standing || 0) < -0.01 ? (
+                            <span style={{ color: 'var(--text-danger)', fontWeight: 'bold' }}>You owe: {g.currency} {Math.abs(Number(g.standing)).toFixed(2)}</span>
+                          ) : (
+                            <span className="np-text-muted">Settled ✔</span>
+                          )}
+                        </div>
                       </div>
                       <span style={{ color: 'var(--text-primary)' }}>›</span>
                     </div>
