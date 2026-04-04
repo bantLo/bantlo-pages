@@ -1,5 +1,5 @@
 {
-  "version": "1.7.4",
-  "message": "Protocol 1.7.4: High-Visibility Sentences. History records for payments are now rendered as high-visibility, single-line green sentences. Introduced a streamlined 'lite' editor for payments that eliminates clutter by only showing amount adjustment and deletion options.",
-  "published_at": "2026-04-04T19:00:00.000Z"
+  "version": "1.7.6",
+  "message": "Protocol 1.7.6: Settlement Flag Resurrection. Fixed an issue where the `is_settlement` flag was being dropped during API fetch requests, preventing the streamlined UI from rendering correctly. Data payload correctly preserves status for all historic transactions.",
+  "published_at": "2026-04-05T00:00:00.000Z"
 }

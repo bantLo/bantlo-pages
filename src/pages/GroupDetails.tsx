@@ -51,6 +51,15 @@ export default function GroupDetails() {
     });
   }, []);
 
+  // Redirect settlement detail view to the specialized Lite Editor
+  useEffect(() => {
+    if (viewingExpense?.is_settlement) {
+      const e = viewingExpense;
+      setViewingExpense(null);
+      setEditingSettlement(e);
+    }
+  }, [viewingExpense]);
+
   const summarizeExpenseForUser = (expense: any) => {
     if (!currentUserId) return null;
     const paid = expense.payments?.find((p: any) => p.user_id === currentUserId)?.amount_paid || 0;
@@ -382,36 +391,37 @@ export default function GroupDetails() {
                 <p className="np-text-muted" style={{ textAlign: 'center' }}>No expenses logged.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-                  {expenses.map((e: any) => (
-                    <div 
-                      key={e.id} 
-                      className="np-flex-between" 
-                      onClick={() => !e.is_settlement && setViewingExpense(e)}
-                      style={{ 
-                        padding: e.is_settlement ? '0.5rem' : '0.75rem 0.5rem', 
-                        borderBottom: '1px solid #333', 
-                        cursor: e.is_settlement ? 'default' : 'pointer', 
-                        transition: 'background 0.2s',
-                        color: e.is_settlement ? 'var(--text-accent)' : 'inherit'
-                      }}
-                      onMouseEnter={(evt) => !e.is_settlement && (evt.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                      onMouseLeave={(evt) => !e.is_settlement && (evt.currentTarget.style.background = 'transparent')}
-                    >
-                      {e.is_settlement ? (
-                        <div 
-                          style={{ 
-                            width: '100%', 
-                            fontSize: '0.8rem', 
-                            fontWeight: 'bold', 
-                            color: 'var(--text-accent)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}
-                          onClick={(evt) => { evt.stopPropagation(); setEditingSettlement(e); }}
-                        >
+                  {expenses.map((e: any) => {
+                    const isSettlement = e.is_settlement === true;
+                    return (
+                      <div 
+                        key={e.id} 
+                        className="np-flex-between" 
+                        onClick={() => isSettlement ? setEditingSettlement(e) : setViewingExpense(e)}
+                        style={{ 
+                          padding: isSettlement ? '0.5rem' : '0.75rem 0.5rem', 
+                          borderBottom: '1px solid #333', 
+                          cursor: 'pointer', 
+                          transition: 'background 0.2s',
+                          color: isSettlement ? 'var(--text-accent)' : 'inherit'
+                        }}
+                        onMouseEnter={(evt) => evt.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                        onMouseLeave={(evt) => evt.currentTarget.style.background = 'transparent'}
+                      >
+                        {isSettlement ? (
+                          <div 
+                            style={{ 
+                              width: '100%', 
+                              fontSize: '0.8rem', 
+                              fontWeight: 'bold', 
+                              color: 'var(--text-accent)',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
                           <span>
-                            {getSettlementNameString(e)} / {new Date(e.created_at).toLocaleDateString()}
+                            {getSettlementNameString(e)} | {new Date(e.created_at).toLocaleDateString()}
                           </span>
                           <span>
                             {group.currency} {Number(e.amount).toFixed(2)}
@@ -437,7 +447,7 @@ export default function GroupDetails() {
                         </>
                       )}
                     </div>
-                  ))}
+                  ); })}
                   
                   {hasMore && (
                     <NeoButton 
@@ -619,7 +629,7 @@ export default function GroupDetails() {
       )}
 
       {/* Transaction Detail Overlay */}
-      {viewingExpense && (
+      {viewingExpense && !viewingExpense.is_settlement && (
         <div 
           style={{ 
             position: 'fixed', 
