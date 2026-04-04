@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
-  "message": "Unified Ledger Protocol: Settlements are now officially 'Normal Transactions'. They appear directly in your Recent Records with clear 'Who paid Who' status, ensuring 100% transparency and rock-solid balance tracking across all members.",
-  "published_at": "2026-04-04T17:30:00.000Z"
+  "version": "1.7.3",
+  "message": "Protocol 1.7.3: Data Visibility Hardening. We've upgraded the Management Tab to resolve member balances directly from the group list, ensuring that debt calculations and settlement suggestions are always visible and accurate.",
+  "published_at": "2026-04-04T18:00:00.000Z"
 }

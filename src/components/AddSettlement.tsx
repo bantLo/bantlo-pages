@@ -15,12 +15,13 @@ interface AddSettlementProps {
   onCancel: () => void;
   initialFromId?: string;
   initialToId?: string;
+  initialAmount?: number;
 }
 
-export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId }: AddSettlementProps) {
+export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId, initialAmount }: AddSettlementProps) {
   const [fromUserId, setFromUserId] = useState(initialFromId || '');
   const [toUserId, setToUserId] = useState(initialToId || '');
-  const [amount, setAmount] = useState<number | ''>('');
+  const [amount, setAmount] = useState<number | ''>(initialAmount || '');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {

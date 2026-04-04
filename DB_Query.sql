@@ -66,15 +66,6 @@ CREATE TABLE IF NOT EXISTS balances (
   UNIQUE(group_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS settlements (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
-  from_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  to_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  amount NUMERIC(10,2) NOT NULL CHECK (amount > 0),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
-);
-
 -- ==========================================
 -- 2. Aggressive Database Accounting Triggers
 -- ==========================================
@@ -150,30 +141,6 @@ BEGIN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Trigger settlement: When a settlement is recorded, update balances for both participants.
-CREATE OR REPLACE FUNCTION update_balance_on_settlement() RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    -- Payer (from_user_id) increases balance (paid debt)
-    INSERT INTO balances (group_id, user_id, balance) VALUES (NEW.group_id, NEW.from_user_id, NEW.amount)
-    ON CONFLICT (group_id, user_id) DO UPDATE SET balance = balances.balance + EXCLUDED.balance;
-    -- Receiver (to_user_id) decreases balance (received payment)
-    INSERT INTO balances (group_id, user_id, balance) VALUES (NEW.group_id, NEW.to_user_id, -NEW.amount)
-    ON CONFLICT (group_id, user_id) DO UPDATE SET balance = balances.balance + EXCLUDED.balance;
-  ELSIF TG_OP = 'DELETE' THEN
-    -- Reverse effects
-    UPDATE balances SET balance = balance - OLD.amount WHERE group_id = OLD.group_id AND user_id = OLD.from_user_id;
-    UPDATE balances SET balance = balance + OLD.amount WHERE group_id = OLD.group_id AND user_id = OLD.to_user_id;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS trg_settlement_balance ON settlements;
-CREATE TRIGGER trg_settlement_balance
-AFTER INSERT OR DELETE ON settlements
-FOR EACH ROW EXECUTE FUNCTION update_balance_on_settlement();
 
 
 DROP TRIGGER IF EXISTS trg_split_balance ON expense_splits;

@@ -110,7 +110,7 @@ export async function fetchGroupBalances(groupId: string) {
   try {
     const { data, error } = await supabase
       .from('balances')
-      .select('user_id, balance, profiles:user_id(display_name, email)')
+      .select('user_id, balance')
       .eq('group_id', groupId);
 
     if (error) throw error;

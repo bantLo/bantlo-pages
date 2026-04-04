@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement, createGroupInvite, fetchMoreExpenses } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses } from '../lib/api';
 import { getExpensesCached, updateCachedGroupStanding } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import AddExpense from '../components/AddExpense';
@@ -19,7 +19,6 @@ export default function GroupDetails() {
   
   const [expenseCount, setExpenseCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [settlements, setSettlements] = useState<any[]>([]);
   const [showAddSettlement, setShowAddSettlement] = useState(false);
   
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -34,7 +33,7 @@ export default function GroupDetails() {
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [viewingExpense, setViewingExpense] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'expenses' | 'management'>('expenses');
-  const [quickSettle, setQuickSettle] = useState<{from: string, to: string} | null>(null);
+  const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
 
   useEffect(() => {
@@ -79,15 +78,6 @@ export default function GroupDetails() {
     return `${fromName} paid ${toName}`;
   };
 
-  const summarizeSettlementForUser = (s: any) => {
-    if (!currentUserId) return null;
-    const fromId = s.from_user_id || s.payments?.[0]?.user_id;
-    const toId = s.to_user_id || s.splits?.[0]?.user_id;
-
-    if (fromId === currentUserId) return <span style={{ color: 'var(--text-accent)' }}>Paid {Number(s.amount).toFixed(2)}</span>;
-    if (toId === currentUserId) return <span style={{ color: 'var(--text-danger)' }}>Received {Number(s.amount).toFixed(2)}</span>;
-    return <span className="np-text-muted">Doesn't involve you</span>;
-  };
 
   const getPayerNameString = (expense: any) => {
     if (!expense.payments || expense.payments.length === 0) return 'Unknown paid';
@@ -124,18 +114,16 @@ export default function GroupDetails() {
       const gData = await fetchGroupDetails(groupId);
       setGroup(gData);
       
-      const [mData, bData, eData, sData, countTemp] = await Promise.all([
+      const [mData, bData, eData, countTemp] = await Promise.all([
         fetchGroupMembers(groupId),
         fetchGroupBalances(groupId),
         fetchRecentExpenses(groupId, 20),
-        fetchRecentSettlements(groupId),
         fetchExpenseCount(groupId)
       ]);
       
       setMembers(mData);
       setBalances(bData);
       setExpenses(eData);
-      setSettlements(sData);
       setExpenseCount(countTemp);
       setHasMore(countTemp > eData.length);
 
@@ -276,15 +264,7 @@ export default function GroupDetails() {
     }
   };
 
-  const handleDeleteSettlement = async (settlementId: string) => {
-    if (!id || !window.confirm('Are you sure? This will delete the payment record and reverse its balance effects.')) return;
-    try {
-      await deleteSettlement(settlementId);
-      loadGroupData(id);
-    } catch(err: any) {
-      alert('Failed to delete settlement: ' + err.message);
-    }
-  };
+
 
   const handleUpdateGroupSettings = async () => {
     if (!editGroupName.trim()) return;
@@ -380,104 +360,75 @@ export default function GroupDetails() {
             )}
           </div>
 
-          <div className="np-grid-desktop">
-            <div className="np-section" style={{ borderStyle: 'dashed' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Recent Records</h2>
+          <div style={{ marginTop: '1.5rem', marginBottom: '3rem' }}>
+            <div className="np-section" style={{ borderStyle: 'dashed', width: '100%' }}>
+              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>History</h2>
               {expenses.length === 0 ? (
                 <p className="np-text-muted" style={{ textAlign: 'center' }}>No expenses logged.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
                   {expenses.map((e: any) => (
-                    /* ... (expense items) ... */
                     <div 
                       key={e.id} 
                       className="np-flex-between" 
                       onClick={() => !e.is_settlement && setViewingExpense(e)}
-                      style={{ padding: '0.75rem 0.5rem', borderBottom: '1px solid #333', cursor: e.is_settlement ? 'default' : 'pointer', transition: 'background 0.2s' }}
+                      style={{ 
+                        padding: e.is_settlement ? '0.5rem' : '0.75rem 0.5rem', 
+                        borderBottom: '1px solid #333', 
+                        cursor: e.is_settlement ? 'default' : 'pointer', 
+                        transition: 'background 0.2s',
+                        color: e.is_settlement ? 'var(--text-accent)' : 'inherit'
+                      }}
                       onMouseEnter={(evt) => !e.is_settlement && (evt.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
                       onMouseLeave={(evt) => !e.is_settlement && (evt.currentTarget.style.background = 'transparent')}
                     >
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
-                        <span style={{ fontWeight: 'bold' }}>
-                          {e.is_settlement ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', border: '1px solid var(--text-accent)', color: 'var(--text-accent)', textTransform: 'uppercase', borderRadius: '2px' }}>Payment</span>
-                              {getSettlementNameString(e)}
-                            </span>
-                          ) : e.description}
-                        </span>
-                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
-                          <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>
-                            {e.is_settlement ? 'Group settlement' : getPayerNameString(e)}
-                          </span>
-                          <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>•</span>
-                          <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>{new Date(e.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
-                          {!e.is_settlement && <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>›</span>}
-                          {e.is_settlement && (
-                             <button 
-                               onClick={(evt) => { evt.stopPropagation(); handleDeleteExpense(e.id); }} 
-                               style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1rem', marginLeft: '0.2rem' }}
-                             >
-                               ✖
-                             </button>
-                          )}
-                        </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
-                          {e.is_settlement ? summarizeSettlementForUser(e) : summarizeExpenseForUser(e)}
-                        </span>
-                      </div>
+                      {e.is_settlement ? (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                            <span style={{ fontWeight: 'bold' }}>{getSettlementNameString(e)}</span>
+                            <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>• {new Date(e.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                            <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
+                            <button 
+                              onClick={(evt) => { evt.stopPropagation(); handleDeleteExpense(e.id); }} 
+                              style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '0.9rem' }}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
+                            <span style={{ fontWeight: 'bold' }}>{e.description}</span>
+                            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
+                              <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>{getPayerNameString(e)}</span>
+                              <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>•</span>
+                              <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>{new Date(e.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
+                              <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>›</span>
+                            </div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{summarizeExpenseForUser(e)}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                   
                   {hasMore && (
                     <NeoButton 
                       variant="default" 
-                      onClick={(e: any) => { e.stopPropagation(); handleLoadMore(); }} 
+                      onClick={(evt: any) => { evt.stopPropagation(); handleLoadMore(); }} 
                       style={{ marginTop: '1rem', width: '100%', fontSize: '0.8rem', borderColor: '#333' }}
                     >
                       Load More Transactions ({expenseCount - expenses.length} remaining)
                     </NeoButton>
                   )}
-                </div>
-              )}
-            </div>
-
-            <div className="np-section" style={{ borderStyle: 'dashed' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Payment History</h2>
-              {settlements.length === 0 ? (
-                 <p className="np-text-muted" style={{ textAlign: 'center' }}>No payments yet.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>
-                  {settlements.map((s: any) => (
-                    <div 
-                      key={s.id} 
-                      className="np-flex-between" 
-                      style={{ padding: '0.75rem 0.5rem', borderBottom: '1px solid #333', transition: 'background 0.2s' }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{getSettlementNameString(s)}</span>
-                        <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{new Date(s.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.1rem' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{group.currency} {Number(s.amount).toFixed(2)}</span>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{summarizeSettlementForUser(s)}</span>
-                        </div>
-                        <button 
-                          onClick={() => handleDeleteSettlement(s.id)} 
-                          style={{ background: 'transparent', border: 'none', color: 'var(--text-danger)', cursor: 'pointer', fontSize: '1.1rem', padding: '0.2rem' }}
-                          title="Delete Payment Record"
-                        >
-                          ✖
-                        </button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
@@ -491,9 +442,13 @@ export default function GroupDetails() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {balances.map((b: any, idx: number) => {
                   const amt = Number(b.balance);
+                  const member = members.find(m => m.user_id === b.user_id);
                   return (
                     <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                      <span>{b.profiles?.display_name || b.profiles?.email || 'Unknown'}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                         <span>{member?.profiles?.display_name || member?.profiles?.email || 'Unknown User'}</span>
+                         <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{member?.profiles?.email || 'No email registered'}</span>
+                      </div>
                       <span style={{ fontWeight: 'bold', color: amt === 0 ? 'var(--text-secondary)' : (amt > 0 ? 'var(--text-accent)' : 'var(--text-danger)') }}>
                         {amt > 0 ? '+' : ''}{amt.toFixed(2)}
                       </span>
@@ -525,10 +480,12 @@ export default function GroupDetails() {
 
                   return results.map((r, i) => (
                     <div key={i} className="np-flex-between" style={{ padding: '0.5rem', background: 'var(--bg-dark)', borderLeft: '3px solid var(--text-accent)' }}>
-                      <span style={{ fontSize: '0.85rem' }}>{r.from.profiles?.display_name || 'User'} owes {r.to.profiles?.display_name || 'User'}</span>
+                      <span style={{ fontSize: '0.85rem' }}>
+                        {members.find(m => m.user_id === r.from.user_id)?.profiles?.display_name || 'Someone'} owes {members.find(m => m.user_id === r.to.user_id)?.profiles?.display_name || 'Someone'}
+                      </span>
                       <button 
                         onClick={() => { 
-                          setQuickSettle({ from: r.from.user_id, to: r.to.user_id }); 
+                          setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
                           setShowAddSettlement(true); 
                         }}
                         style={{ background: 'var(--text-accent)', color: 'black', border: 'none', padding: '0.2rem 0.5rem', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.75rem' }}
@@ -549,6 +506,7 @@ export default function GroupDetails() {
                 members={members} 
                 initialFromId={quickSettle?.from}
                 initialToId={quickSettle?.to}
+                initialAmount={quickSettle?.amount}
                 onComplete={handleSettlementSaved} 
                 onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
               />
