@@ -11,7 +11,7 @@ interface Member {
 interface AddExpenseProps {
   groupId: string;
   members: Member[];
-  onComplete: () => void;
+  onComplete: (expense: any) => void;
   onCancel: () => void;
   editExpenseId?: string;
   initialData?: any;
@@ -150,12 +150,13 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       }));
 
       if (editExpenseId) {
-        await updateFullExpense(
+        const updated = await updateFullExpense(
           editExpenseId,
           { description, amount: Number(amount), split_type: splitType },
           paymentsToInsert,
           splitsToInsert
         );
+        onComplete(updated);
       } else {
         const { data: exp, error: e1 } = await supabase.from('expenses').insert([{
           group_id: groupId,
@@ -170,9 +171,25 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
 
         const { error: e2 } = await supabase.from('expense_splits').insert(splitsToInsert.map(s => ({ ...s, expense_id: exp.id })));
         if (e2) throw e2;
-      }
 
-      onComplete();
+        // Fetch full formatted record for UI sync
+        const { data: fullRecord, error: e3 } = await supabase
+          .from('expenses')
+          .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+          .eq('id', exp.id)
+          .single();
+        
+        if (e3) throw e3;
+
+        try {
+          const { updateExpensesSync } = await import('../lib/db');
+          await updateExpensesSync([fullRecord]);
+        } catch (dbErr) {
+          console.error('Failed atomic cache sync:', dbErr);
+        }
+
+        onComplete(fullRecord);
+      }
     } catch (err: any) {
       console.error(err);
       alert('Failed to save expense');

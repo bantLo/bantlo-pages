@@ -10,8 +10,12 @@ interface BantLoDB extends DBSchema {
     value: { group_id: string; balances: any[]; updated_at: string };
   };
   expenses: {
-    key: string; // group_id
-    value: { group_id: string; expenses: any[]; updated_at: string };
+    key: string; // id
+    value: any;
+    indexes: {
+      group_id: string;
+      created_at: string;
+    };
   };
   mutations: {
     key: number;
@@ -28,12 +32,22 @@ let dbPromise: Promise<IDBPDatabase<BantLoDB>> | null = null;
 
 export function getDB() {
   if (!dbPromise) {
-    dbPromise = openDB<BantLoDB>('bantlo-data-cache-v1', 1, {
-      upgrade(db) {
-        db.createObjectStore('groups', { keyPath: 'id' });
-        db.createObjectStore('balances', { keyPath: 'group_id' });
-        db.createObjectStore('expenses', { keyPath: 'group_id' });
-        db.createObjectStore('mutations', { keyPath: 'id', autoIncrement: true });
+    dbPromise = openDB<BantLoDB>('bantlo-data-cache-v1', 2, {
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          db.createObjectStore('groups', { keyPath: 'id' });
+          db.createObjectStore('balances', { keyPath: 'group_id' });
+          db.createObjectStore('mutations', { keyPath: 'id', autoIncrement: true });
+        }
+        
+        if (oldVersion < 2) {
+          if (db.objectStoreNames.contains('expenses')) {
+            db.deleteObjectStore('expenses');
+          }
+          const expenseStore = db.createObjectStore('expenses', { keyPath: 'id' });
+          expenseStore.createIndex('group_id', 'group_id');
+          expenseStore.createIndex('created_at', 'created_at');
+        }
       },
       blocked() {
         console.warn('IDB Connection Blocked: Retrying...');
@@ -76,6 +90,25 @@ export async function updateCachedGroupsSync(groups: any[]) {
   // We'll update the ones we got.
   for (const g of groups) {
     await tx.store.put(g);
+  }
+  await tx.done;
+}
+
+export async function getExpensesCached(groupId: string, limit: number = 50) {
+  const db = await getDB();
+  const results = await db.getAllFromIndex('expenses', 'group_id', groupId);
+  return results
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit);
+}
+
+export async function updateExpensesSync(expenses: any[]) {
+  const db = await getDB();
+  const tx = db.transaction('expenses', 'readwrite');
+  for (const e of expenses) {
+    if (e && e.id) {
+      await tx.store.put(e);
+    }
   }
   await tx.done;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement, createGroupInvite } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement, createGroupInvite, fetchMoreExpenses } from '../lib/api';
+import { getExpensesCached } from '../lib/db';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
 import BackButton from '../components/BackButton';
@@ -16,6 +17,7 @@ export default function GroupDetails() {
   const [loading, setLoading] = useState(true);
   
   const [expenseCount, setExpenseCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [settlements, setSettlements] = useState<any[]>([]);
   const [showAddSettlement, setShowAddSettlement] = useState(false);
   
@@ -41,6 +43,14 @@ export default function GroupDetails() {
   }, [id]);
 
   const loadGroupData = async (groupId: string) => {
+    // 1. Instant Load from Cache (SWR)
+    getExpensesCached(groupId, 20).then(cached => {
+      if (cached && cached.length > 0) {
+        setExpenses(cached);
+        setLoading(false);
+      }
+    });
+
     try {
       const gData = await fetchGroupDetails(groupId);
       setGroup(gData);
@@ -48,7 +58,7 @@ export default function GroupDetails() {
       const [mData, bData, eData, sData, countTemp] = await Promise.all([
         fetchGroupMembers(groupId),
         fetchGroupBalances(groupId),
-        fetchRecentExpenses(groupId),
+        fetchRecentExpenses(groupId, 20),
         fetchRecentSettlements(groupId),
         fetchExpenseCount(groupId)
       ]);
@@ -58,6 +68,7 @@ export default function GroupDetails() {
       setExpenses(eData);
       setSettlements(sData);
       setExpenseCount(countTemp);
+      setHasMore(countTemp > eData.length);
     } catch (err) {
       console.error(err);
     } finally {
@@ -65,10 +76,37 @@ export default function GroupDetails() {
     }
   };
 
-  const handleExpenseSaved = () => {
+  const handleLoadMore = async () => {
+    if (!id || !hasMore) return;
+    try {
+      const more = await fetchMoreExpenses(id, expenses.length, 20);
+      const newExpenses = [...expenses, ...more];
+      setExpenses(newExpenses);
+      setHasMore(expenseCount > newExpenses.length);
+    } catch (err) {
+      console.error('Load more failed:', err);
+    }
+  };
+
+  const handleExpenseSaved = (newExpense: any) => {
     setShowAddExpense(false);
     setEditingExpense(null);
-    if (id) loadGroupData(id);
+    
+    // Optimistic UI update
+    setExpenses(prev => {
+      const exists = prev.find(e => e.id === newExpense.id);
+      if (exists) {
+        return prev.map(e => e.id === newExpense.id ? newExpense : e);
+      }
+      return [newExpense, ...prev];
+    });
+
+    // Still sync balances/count in background
+    if (id) {
+       fetchGroupBalances(id).then(setBalances);
+       fetchExpenseCount(id).then(setExpenseCount);
+    }
+    
     alert('Expense successfully saved!');
   };
 
@@ -258,7 +296,7 @@ export default function GroupDetails() {
               <AddExpense 
                 groupId={id!} 
                 members={members} 
-                onComplete={handleExpenseSaved} 
+                onComplete={(exp: any) => handleExpenseSaved(exp)} 
                 onCancel={() => { setShowAddExpense(false); setEditingExpense(null); }} 
                 editExpenseId={editingExpense?.id}
                 initialData={editingExpense}
@@ -274,6 +312,7 @@ export default function GroupDetails() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto' }}>
                   {expenses.map((e: any) => (
+                    /* ... (expense items) ... */
                     <div 
                       key={e.id} 
                       className="np-flex-between" 
@@ -292,6 +331,16 @@ export default function GroupDetails() {
                       </div>
                     </div>
                   ))}
+                  
+                  {hasMore && (
+                    <NeoButton 
+                      variant="default" 
+                      onClick={(e: any) => { e.stopPropagation(); handleLoadMore(); }} 
+                      style={{ marginTop: '1rem', width: '100%', fontSize: '0.8rem', borderColor: '#333' }}
+                    >
+                      Load More Transactions ({expenseCount - expenses.length} remaining)
+                    </NeoButton>
+                  )}
                 </div>
               )}
             </div>

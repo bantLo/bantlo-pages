@@ -123,29 +123,52 @@ export async function fetchGroupBalances(groupId: string) {
   }
 }
 
-export async function fetchRecentExpenses(groupId: string) {
+export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
   try {
     const { data, error } = await supabase
       .from('expenses')
       .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(limit);
 
     if (error) throw error;
     
-    const db = await getDB();
-    await db.put('expenses', { group_id: groupId, expenses: data as any[], updated_at: new Date().toISOString() });
+    try {
+      const { updateExpensesSync } = await import('./db');
+      await updateExpensesSync(data);
+    } catch (dbError) {
+      console.error('Failed to sync expenses to IndexedDB:', dbError);
+    }
+    
     return data;
   } catch (error) {
     if (!navigator.onLine) {
-      const db = await getDB();
-      const cached = await db.get('expenses', groupId);
-      return cached ? cached.expenses : [];
+      const { getExpensesCached } = await import('./db');
+      return await getExpensesCached(groupId, limit);
     }
-    console.error('Failed fetching expenses:', error);
-    return [];
+    throw error;
   }
+}
+
+export async function fetchMoreExpenses(groupId: string, offset: number, limit: number = 20) {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw error;
+  
+  try {
+    const { updateExpensesSync } = await import('./db');
+    await updateExpensesSync(data);
+  } catch (dbError) {
+    console.error('Sync failed:', dbError);
+  }
+  
+  return data;
 }
 
 // ==========================================
@@ -187,12 +210,11 @@ export async function updateFullExpense(
     .eq('id', expenseId);
   if (e1) throw e1;
 
-  // 2. Delete existing payments & splits (Triggers will automatically reverse old balances)
-  // We do this precisely for this expense_id
+  // 2. Delete existing payments & splits
   await supabase.from('expense_payments').delete().eq('expense_id', expenseId);
   await supabase.from('expense_splits').delete().eq('expense_id', expenseId);
 
-  // 3. Insert new payments & splits (Triggers will compute new balances)
+  // 3. Insert new payments & splits
   const { error: e2 } = await supabase
     .from('expense_payments')
     .insert(payments.map(p => ({ ...p, expense_id: expenseId })));
@@ -202,6 +224,24 @@ export async function updateFullExpense(
     .from('expense_splits')
     .insert(splits.map(s => ({ ...s, expense_id: expenseId })));
   if (e3) throw e3;
+
+  // 4. Return the full record
+  const { data, error: e4 } = await supabase
+    .from('expenses')
+    .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+    .eq('id', expenseId)
+    .single();
+    
+  if (e4) throw e4;
+  
+  try {
+    const { updateExpensesSync } = await import('./db');
+    await updateExpensesSync([data]);
+  } catch (dbError) {
+    console.error('Local sync failed:', dbError);
+  }
+
+  return data;
 }
 
 export async function updateGroupSettings(groupId: string, updates: { name?: string, currency?: string }) {
