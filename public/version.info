@@ -1,5 +1,5 @@
 {
-  "version": "1.7.5",
-  "message": "Protocol 1.7.5: Settlement Interaction Shield. Unified click handlers in the history list to ensure settlements only open the Lite Editor. Added a safety redirect to prevent settlements from accidentally opening the standard summary modal.",
-  "published_at": "2026-04-04T20:00:00.000Z"
+  "version": "1.7.6",
+  "message": "Protocol 1.7.6: Settlement Flag Resurrection. Fixed an issue where the `is_settlement` flag was being dropped during API fetch requests, preventing the streamlined UI from rendering correctly. Data payload correctly preserves status for all historic transactions.",
+  "published_at": "2026-04-05T00:00:00.000Z"
 }

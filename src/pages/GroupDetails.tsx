@@ -51,15 +51,6 @@ export default function GroupDetails() {
     });
   }, []);
 
-  // Redirect settlement detail view to the specialized Lite Editor
-  useEffect(() => {
-    if (viewingExpense?.is_settlement) {
-      const e = viewingExpense;
-      setViewingExpense(null);
-      setEditingSettlement(e);
-    }
-  }, [viewingExpense]);
-
   const summarizeExpenseForUser = (expense: any) => {
     if (!currentUserId) return null;
     const paid = expense.payments?.find((p: any) => p.user_id === currentUserId)?.amount_paid || 0;
@@ -378,7 +369,6 @@ export default function GroupDetails() {
                 initialToId={editingSettlement.splits?.[0]?.user_id}
                 initialAmount={editingSettlement.amount}
                 onComplete={() => { setEditingSettlement(null); loadGroupData(id!); }}
-                onDelete={(sid) => { handleDeleteExpense(sid); setEditingSettlement(null); }}
                 onCancel={() => setEditingSettlement(null)}
               />
             )}
@@ -397,7 +387,7 @@ export default function GroupDetails() {
                       <div 
                         key={e.id} 
                         className="np-flex-between" 
-                        onClick={() => isSettlement ? setEditingSettlement(e) : setViewingExpense(e)}
+                        onClick={() => setViewingExpense(e)}
                         style={{ 
                           padding: isSettlement ? '0.5rem' : '0.75rem 0.5rem', 
                           borderBottom: '1px solid #333', 
@@ -629,7 +619,7 @@ export default function GroupDetails() {
       )}
 
       {/* Transaction Detail Overlay */}
-      {viewingExpense && !viewingExpense.is_settlement && (
+      {viewingExpense && (
         <div 
           style={{ 
             position: 'fixed', 
@@ -713,8 +703,12 @@ export default function GroupDetails() {
             <div style={{ display: 'flex', gap: '1rem' }}>
               <NeoButton 
                 onClick={() => { 
-                  setEditingExpense(viewingExpense); 
-                  setShowAddExpense(true); 
+                  if (viewingExpense.is_settlement) {
+                    setEditingSettlement(viewingExpense);
+                  } else {
+                    setEditingExpense(viewingExpense); 
+                    setShowAddExpense(true); 
+                  }
                   setViewingExpense(null); 
                 }} 
                 variant="primary" 

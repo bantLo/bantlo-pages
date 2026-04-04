@@ -51,7 +51,11 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       // Handle Splits
       if (initialData.split_type === 0) {
         const inc: Record<string, boolean> = {};
-        initialData.splits.forEach((s: any) => inc[s.user_id] = Number(s.amount_owed) > 0);
+        // Default everyone to false first, so missing members remain excluded
+        members.forEach(m => inc[m.user_id] = false);
+        initialData.splits.forEach((s: any) => {
+          if (Number(s.amount_owed) > 0) inc[s.user_id] = true;
+        });
         setIncludedInEqual(inc);
       } else if (initialData.split_type === 1) {
         const ea: Record<string, number> = {};

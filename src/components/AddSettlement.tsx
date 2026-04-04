@@ -17,10 +17,9 @@ interface AddSettlementProps {
   initialToId?: string;
   initialAmount?: number;
   editId?: string;
-  onDelete?: (id: string) => void;
 }
 
-export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId, initialAmount, editId, onDelete }: AddSettlementProps) {
+export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId, initialAmount, editId }: AddSettlementProps) {
   const [fromUserId, setFromUserId] = useState(initialFromId || '');
   const [toUserId, setToUserId] = useState(initialToId || '');
   const [amount, setAmount] = useState<number | ''>(initialAmount || '');
@@ -119,17 +118,6 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
         <NeoButton type="submit" variant="primary" style={{ flex: 1, minWidth: '120px', borderColor: 'var(--text-accent)' }} disabled={loading}>
           {loading ? 'Saving...' : (editId ? 'Update Payment' : 'Settle')}
         </NeoButton>
-        
-        {editId && onDelete && (
-          <NeoButton 
-            type="button" 
-            onClick={() => editId && onDelete(editId)} 
-            style={{ flex: 1, minWidth: '120px', color: 'var(--text-danger)', borderColor: 'var(--text-danger)' }} 
-            disabled={loading}
-          >
-            Delete Payment
-          </NeoButton>
-        )}
 
         <NeoButton type="button" onClick={onCancel} disabled={loading}>Cancel</NeoButton>
       </div>
