@@ -1,5 +1,5 @@
 {
-  "version": "1.8.2",
-  "message": "Protocol 1.8.2: Beautiful Administrative Actions. Refined the 'Add via email' and 'Invite link' flow with clear descriptions and improved card-based styling for better UX.",
-  "published_at": "2026-04-05T02:10:00.000Z"
+  "version": "1.8.5",
+  "message": "Protocol 1.8.5: Quick Settle Clarification. Removed the lightning bolt from the header and added 'pays' text next to the arrow for better readability (who pays who).",
+  "published_at": "2026-04-05T03:10:00.000Z"
 }
