@@ -277,15 +277,24 @@ export default function GroupDetails() {
 
 
   const [timedOut, setTimedOut] = useState(false);
+  const [minLoaded, setMinLoaded] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setTimedOut(true);
     }, 10000); // 10 second grace period
-    return () => clearTimeout(timer);
+    
+    const minTimer = setTimeout(() => {
+      setMinLoaded(true);
+    }, 500); // Pulse for at least 500ms for aesthetic feel
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(minTimer);
+    };
   }, []);
 
-  if (!group) {
+  if (!group || !minLoaded) {
     if (!timedOut) {
       return (
         <div className="np-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -302,13 +311,15 @@ export default function GroupDetails() {
       );
     }
 
-    return (
-      <div className="np-container" style={{ textAlign: 'center', paddingTop: '5rem' }}>
-        <p className="np-text-danger" style={{ fontSize: '1.2rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>Group inaccessible or unavailable</p>
-        <p className="np-text-muted" style={{ marginBottom: '2rem' }}>This group might have been deleted or you don't have permission to view it.</p>
-        <BackButton fallback="/dashboard" />
-      </div>
-    );
+    if (!group) {
+      return (
+        <div className="np-container" style={{ textAlign: 'center', paddingTop: '5rem' }}>
+          <p className="np-text-danger" style={{ fontSize: '1.2rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>Group inaccessible or unavailable</p>
+          <p className="np-text-muted" style={{ marginBottom: '2rem' }}>This group might have been deleted or you don't have permission to view it.</p>
+          <BackButton fallback="/dashboard" />
+        </div>
+      );
+    }
   }
 
   return (
