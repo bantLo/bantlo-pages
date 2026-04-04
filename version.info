@@ -1,5 +1,5 @@
 {
-  "version": "1.5.6",
-  "message": "Expense Calculation UX: Added precise checkboxes to 'Equal Split' so you can quickly exclude specific individuals from a shared bill.",
-  "published_at": "2026-04-04T15:30:00.000Z"
+  "version": "1.5.8",
+  "message": "Ledger Scannability UX: Cleaned up the personal 'Owed' indicators by stripping noise, and introduced dynamic Payer Name tags right beside the transaction dates so you can see who funded every expense without opening them.",
+  "published_at": "2026-04-04T15:55:00.000Z"
 }

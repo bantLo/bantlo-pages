@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, fetchRecentSettlements, deleteSettlement, createGroupInvite, fetchMoreExpenses } from '../lib/api';
 import { getExpensesCached } from '../lib/db';
+import { supabase } from '../lib/supabase';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
 import BackButton from '../components/BackButton';
@@ -41,6 +42,46 @@ export default function GroupDetails() {
       loadGroupData(id);
     }
   }, [id]);
+
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
+
+  const summarizeExpenseForUser = (expense: any) => {
+    if (!currentUserId) return null;
+    const paid = expense.payments?.find((p: any) => p.user_id === currentUserId)?.amount_paid || 0;
+    const owed = expense.splits?.find((s: any) => s.user_id === currentUserId)?.amount_owed || 0;
+    const net = paid - owed;
+
+    if (net > 0) return <span style={{ color: 'var(--text-accent)' }}>Owed {net.toFixed(2)}</span>;
+    if (net < 0) return <span style={{ color: 'var(--text-danger)' }}>Owe {Math.abs(net).toFixed(2)}</span>;
+    if (paid === 0 && owed === 0) return <span className="np-text-muted">Doesn't involve you</span>;
+    return <span className="np-text-muted">Settled</span>;
+  };
+
+  const getPayerNameString = (expense: any) => {
+    if (!expense.payments || expense.payments.length === 0) return 'Unknown paid';
+    
+    if (expense.payments.length === 1 && expense.payments[0].user_id === currentUserId) {
+       return 'You paid';
+    }
+
+    const payerNames = expense.payments.map((p: any) => {
+      if (p.user_id === currentUserId) return 'You';
+      const dbProfile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles;
+      const profile = dbProfile || members.find(m => m.user_id === p.user_id)?.profiles;
+      const name = profile?.display_name || profile?.email || 'Unknown';
+      return name.split(' ')[0];
+    });
+    
+    if (payerNames.length === 1) return `${payerNames[0]} paid`;
+    if (payerNames.length === 2) return `${payerNames[0]} and ${payerNames[1]} paid`;
+    return `${payerNames.length} people paid`;
+  };
 
   const loadGroupData = async (groupId: string) => {
     // 1. Instant Load from Cache (SWR)
@@ -325,11 +366,18 @@ export default function GroupDetails() {
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, marginRight: '1rem' }}>
                         <span style={{ fontWeight: 'bold' }}>{e.description}</span>
-                        <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{new Date(e.created_at).toLocaleDateString()}</span>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.1rem' }}>
+                          <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>{getPayerNameString(e)}</span>
+                          <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>•</span>
+                          <span className="np-text-muted" style={{ fontSize: '0.75rem' }}>{new Date(e.created_at).toLocaleDateString()}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
-                        <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>›</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 'bold' }}>{group.currency} {Number(e.amount).toFixed(2)}</span>
+                          <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>›</span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{summarizeExpenseForUser(e)}</span>
                       </div>
                     </div>
                   ))}

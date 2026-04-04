@@ -45,7 +45,7 @@ export default function Auth() {
         window.location.assign('/dashboard');
         return; 
       } else if (viewState === 'signup') {
-        if (!name.trim()) throw new Error('Please enter your full name.');
+        if (name.trim().length < 3) throw new Error('Full Name must be at least 3 characters long.');
         if (password.length < 8) throw new Error('Password must be at least 8 characters long.');
         if (password !== confirmPassword) throw new Error('Passwords do not match.');
         
@@ -139,30 +139,31 @@ export default function Auth() {
               {viewState === 'signup' && (
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                    FULL NAME
+                    FULL NAME <span style={{ color: 'var(--text-danger)' }}>*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      background: 'var(--bg-dark)',
-                      border: '2px solid var(--border-color)',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
-                      fontFamily: 'inherit'
-                    }}
-                    placeholder="John Doe"
-                  />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      minLength={3}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: 'var(--bg-dark)',
+                        border: '2px solid var(--border-color)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        fontFamily: 'inherit'
+                      }}
+                      placeholder="John Doe"
+                    />
                 </div>
               )}
 
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                  EMAIL ADDRESS
+                  EMAIL ADDRESS <span style={{ color: 'var(--text-danger)' }}>*</span>
                 </label>
                 <input
                   type="email"
@@ -184,7 +185,7 @@ export default function Auth() {
               {viewState !== 'forgot_password' && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                    PASSWORD
+                    PASSWORD <span style={{ color: 'var(--text-danger)' }}>*</span>
                   </label>
                   <input
                     type="password"
@@ -207,9 +208,9 @@ export default function Auth() {
                   
                   {viewState === 'signup' && (
                     <>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                        CONFIRM PASSWORD
-                      </label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                          CONFIRM PASSWORD <span style={{ color: 'var(--text-danger)' }}>*</span>
+                        </label>
                       <input
                         type="password"
                         value={confirmPassword}
