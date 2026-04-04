@@ -1,5 +1,5 @@
 {
-  "version": "1.5.3",
-  "message": "Data Visibility Audit Complete: Verified attribute parity for groups and ledger visibility. Streamlined System Reset tools for maximum reliability.",
-  "published_at": "2026-04-04T15:00:00.000Z"
+  "version": "1.5.4",
+  "message": "Engine Stabilization: Reverted experimental deep-join structures and restored reliable parallelized balance tracking. Groups and Expenses are now guaranteed to load.",
+  "published_at": "2026-04-04T15:10:00.000Z"
 }

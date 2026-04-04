@@ -4,28 +4,37 @@ import { getDB, updateCachedGroupsSync, updateExpensesSync, getExpensesCached } 
 // Fetch groups a user is part of
 export async function fetchUserGroups(userId: string) {
   try {
-    const { data, error } = await supabase
-      .from('group_members')
-      .select(`
-        group_id,
-        groups (
-          id,
-          name,
-          currency,
-          is_friend_group,
-          updated_at
-        ),
-        user_standing:balances(balance)
-      `)
-      .eq('user_id', userId);
+    const [{ data: memberships, error: gError }, { data: balances, error: bError }] = await Promise.all([
+      supabase
+        .from('group_members')
+        .select(`
+          group_id,
+          groups (
+            id,
+            name,
+            currency,
+            is_friend_group,
+            updated_at
+          )
+        `)
+        .eq('user_id', userId),
+      supabase
+        .from('balances')
+        .select('group_id, balance')
+        .eq('user_id', userId)
+    ]);
       
-    if (error) throw error;
+    if (gError) throw gError;
+    if (bError) throw bError;
     
-    const validGroups = data.map((membership: any) => {
+    // Map balances for quick lookup
+    const balanceMap = new Map(balances?.map(b => [b.group_id, b.balance]));
+    
+    const validGroups = memberships.map((membership: any) => {
       const g = membership.groups;
       if (g) {
         // Embed the standing for easier display
-        (g as any).standing = membership.user_standing?.[0]?.balance || 0;
+        (g as any).standing = balanceMap.get(g.id) || 0;
       }
       return g;
     }).filter(Boolean);
@@ -124,7 +133,7 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+      .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -149,7 +158,7 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
 export async function fetchMoreExpenses(groupId: string, offset: number, limit: number = 20) {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+    .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -222,7 +231,7 @@ export async function updateFullExpense(
   // 4. Return the full record
   const { data, error: e4 } = await supabase
     .from('expenses')
-    .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+    .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
     .eq('id', expenseId)
     .single();
     
