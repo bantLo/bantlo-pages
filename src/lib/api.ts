@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
-
-import { getDB } from './db';
+import { getDB, updateCachedGroupsSync, updateExpensesSync, getExpensesCached } from './db';
 
 // Fetch groups a user is part of
 export async function fetchUserGroups(userId: string) {
@@ -34,7 +33,6 @@ export async function fetchUserGroups(userId: string) {
     
     try {
       // Background Sync: Update local cache with fresh server results without wiping
-      const { updateCachedGroupsSync } = await import('./db');
       await updateCachedGroupsSync(validGroups);
     } catch (dbError) {
       console.error('Background sync failed:', dbError);
@@ -127,7 +125,7 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+      .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -135,7 +133,6 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
     if (error) throw error;
     
     try {
-      const { updateExpensesSync } = await import('./db');
       await updateExpensesSync(data);
     } catch (dbError) {
       console.error('Failed to sync expenses to IndexedDB:', dbError);
@@ -144,7 +141,6 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
     return data;
   } catch (error) {
     if (!navigator.onLine) {
-      const { getExpensesCached } = await import('./db');
       return await getExpensesCached(groupId, limit);
     }
     throw error;
@@ -154,7 +150,7 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
 export async function fetchMoreExpenses(groupId: string, offset: number, limit: number = 20) {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+    .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -162,7 +158,6 @@ export async function fetchMoreExpenses(groupId: string, offset: number, limit: 
   if (error) throw error;
   
   try {
-    const { updateExpensesSync } = await import('./db');
     await updateExpensesSync(data);
   } catch (dbError) {
     console.error('Sync failed:', dbError);
@@ -228,14 +223,13 @@ export async function updateFullExpense(
   // 4. Return the full record
   const { data, error: e4 } = await supabase
     .from('expenses')
-    .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+    .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
     .eq('id', expenseId)
     .single();
     
   if (e4) throw e4;
   
   try {
-    const { updateExpensesSync } = await import('./db');
     await updateExpensesSync([data]);
   } catch (dbError) {
     console.error('Local sync failed:', dbError);

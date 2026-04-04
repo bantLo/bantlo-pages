@@ -49,6 +49,8 @@ export default function GroupDetails() {
         setExpenses(cached);
         setLoading(false);
       }
+    }).catch(err => {
+      console.warn('Cache load failed, bypassing to network:', err);
     });
 
     try {

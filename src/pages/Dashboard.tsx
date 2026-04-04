@@ -27,6 +27,9 @@ export default function Dashboard() {
       }
       // 2. Background Revalidation
       loadGroups();
+    }).catch(err => {
+      console.warn('Dashboard cache load failed, refreshing from network:', err);
+      loadGroups();
     });
   }, []);
 

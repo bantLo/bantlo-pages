@@ -175,7 +175,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
         // Fetch full formatted record for UI sync
         const { data: fullRecord, error: e3 } = await supabase
           .from('expenses')
-          .select('id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
+          .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed, profiles:user_id(display_name, email))')
           .eq('id', exp.id)
           .single();
         
