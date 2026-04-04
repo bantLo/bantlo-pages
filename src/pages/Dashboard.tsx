@@ -78,6 +78,16 @@ export default function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    // 2. Trigger background sync whenever user returns to tab
+    const handleFocus = () => {
+      console.log('Dashboard: Window focused, refreshing groups...');
+      loadGroups();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   const loadGroups = async () => {
     setIsSyncing(true);
     try {

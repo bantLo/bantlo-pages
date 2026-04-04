@@ -94,6 +94,15 @@ export async function updateCachedGroupsSync(groups: any[]) {
   await tx.done;
 }
 
+export async function updateCachedGroupStanding(groupId: string, standing: number) {
+  const db = await getDB();
+  const group = await db.get('groups', groupId);
+  if (group) {
+    group.standing = standing;
+    await db.put('groups', group);
+  }
+}
+
 export async function getExpensesCached(groupId: string, limit: number = 50) {
   const db = await getDB();
   const results = await db.getAllFromIndex('expenses', 'group_id', groupId);

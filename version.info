@@ -1,5 +1,5 @@
 {
-  "version": "1.5.9",
-  "message": "Protocol Enhanced: Settlement and Payment Records now show clear 'Who paid Who' context and personalized standings (Owe/Owed). Verified that zero-balance states update instantaneously upon settling.",
-  "published_at": "2026-04-04T16:25:00.000Z"
+  "version": "1.7.0",
+  "message": "Unified Ledger Protocol: Settlements are now officially 'Normal Transactions'. They appear directly in your Recent Records with clear 'Who paid Who' status, ensuring 100% transparency and rock-solid balance tracking across all members.",
+  "published_at": "2026-04-04T17:30:00.000Z"
 }

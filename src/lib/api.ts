@@ -284,19 +284,72 @@ export async function fetchExpenseCount(groupId: string) {
   return count || 0;
 }
 
+export async function createSettlement(groupId: string, fromId: string, toId: string, amount: number) {
+  // 1. Create the primary expense record
+  const { data: expense, error: eError } = await supabase
+    .from('expenses')
+    .insert([{
+      group_id: groupId,
+      amount: amount,
+      description: 'Settle Payment',
+      split_type: 1, // Exact
+      is_settlement: true
+    }])
+    .select('id, group_id, description, amount, created_at, is_settlement')
+    .single();
+  
+  if (eError) throw eError;
+
+  // 2. Insert Funding Record (Sender pays) and Debt Record (Receiver owes)
+  // This causes the mathematical net effect to perfectly zero out the debt.
+  const { error: pError } = await supabase.from('expense_payments').insert([{
+    expense_id: expense.id,
+    user_id: fromId,
+    amount_paid: amount
+  }]);
+  if (pError) throw pError;
+
+  const { error: sError } = await supabase.from('expense_splits').insert([{
+    expense_id: expense.id,
+    user_id: toId,
+    amount_owed: amount
+  }]);
+  if (sError) throw sError;
+
+  return expense;
+}
+
 export async function fetchRecentSettlements(groupId: string) {
   const { data, error } = await supabase
-    .from('settlements')
-    .select('id, amount, from_user_id, to_user_id, created_at')
+    .from('expenses')
+    .select(`
+      id, 
+      amount, 
+      created_at, 
+      is_settlement,
+      payments:expense_payments(user_id, amount_paid),
+      splits:expense_splits(user_id, amount_owed)
+    `)
     .eq('group_id', groupId)
+    .eq('is_settlement', true)
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(15);
+  
   if (error) throw error;
-  return data || [];
+  
+  // Transform back to the flat structure the UI expects
+  return (data || []).map(e => ({
+    id: e.id,
+    amount: e.amount,
+    created_at: e.created_at,
+    from_user_id: e.payments?.[0]?.user_id,
+    to_user_id: e.splits?.[0]?.user_id
+  }));
 }
 
 export async function deleteSettlement(settlementId: string) {
-  const { error } = await supabase.from('settlements').delete().eq('id', settlementId);
+  // Since settlements are now Expenses, deleting the parent removes the split/payment effect immediately
+  const { error } = await supabase.from('expenses').delete().eq('id', settlementId);
   if (error) throw error;
 }
 

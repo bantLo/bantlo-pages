@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import NeoButton from './NeoButton';
+
+import { createSettlement } from '../lib/api';
 
 interface Member {
   user_id: string;
@@ -29,17 +30,11 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('settlements').insert([{
-        group_id: groupId,
-        from_user_id: fromUserId,
-        to_user_id: toUserId,
-        amount: Number(amount)
-      }]);
-      if (error) throw error;
+      await createSettlement(groupId, fromUserId, toUserId, Number(amount));
       onComplete();
     } catch (err: any) {
       console.error(err);
-      alert('Failed to settle up');
+      alert('Failed to settle up: ' + (err.message || 'Check database connection'));
     } finally {
       setLoading(false);
     }

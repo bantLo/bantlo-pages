@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   description VARCHAR(30) NOT NULL,
   notes TEXT,
   split_type SMALLINT NOT NULL CHECK (split_type IN (0, 1, 2)),
+  is_settlement BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
