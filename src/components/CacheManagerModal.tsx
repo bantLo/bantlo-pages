@@ -47,7 +47,7 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
       zIndex: 9999 
     }}>
       <div className="np-section" style={{ borderColor: 'var(--text-danger)', borderStyle: 'solid', width: '90%', maxWidth: '400px', margin: '0' }}>
-        <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-danger)' }}>System Reset</h3>
+        <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-danger)' }}>App/PWA Reset</h3>
         <p className="np-text-muted" style={{ marginBottom: '1.5rem', lineHeight: 1.4 }}>
           If bantLo is stuck offline, showing ghost expenses, or failing to load the newest design — you can forcefully wipe the localized PWA memory here.
         </p>

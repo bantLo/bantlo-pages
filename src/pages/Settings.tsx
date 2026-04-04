@@ -6,12 +6,14 @@ import BackButton from '../components/BackButton';
 import { useNavigate } from 'react-router-dom';
 import NeoButton from '../components/NeoButton';
 import CacheManagerModal from '../components/CacheManagerModal';
+import FlappyBant from '../components/FlappyBant';
 
 export default function Settings() {
   const [tapCount, setTapCount] = useState(0);
   const pressTimer = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
   const [showCacheModal, setShowCacheModal] = useState(false);
+  const [showEasterEgg, setShowEasterEgg] = useState(false);
   const [versionData, setVersionData] = useState<any>(null);
   const [isPWA, setIsPWA] = useState(false);
 
@@ -37,8 +39,7 @@ export default function Settings() {
     setTapCount(newCount);
     
     if (newCount >= 5) {
-      alert('Easter Egg Activated: Force updating app shell cache and reloading!');
-      forceCacheUpdate();
+      setShowEasterEgg(true);
       setTapCount(0);
     } else {
       if (pressTimer.current) clearTimeout(pressTimer.current);
@@ -57,6 +58,7 @@ export default function Settings() {
 
   return (
     <div className="np-container">
+      {showEasterEgg && <FlappyBant onClose={() => setShowEasterEgg(false)} />}
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <h1 className="np-title" style={{ margin: 0 }}>Settings</h1>
         <BackButton fallback="/dashboard" />
@@ -136,13 +138,13 @@ export default function Settings() {
                        {versionData.status === 'Update Available' ? '⚡ New Protocol Found' : '✔ System Synced'}
                     </span>
                     <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>
-                      TAP 5X TO FORCE
+                      TAP 5X FOR SECRET
                     </span>
                   </div>
 
                   {versionData.status === 'Update Available' && (
                     <NeoButton 
-                      onClick={() => forceCacheUpdate()} 
+                      onClick={(e) => { e.stopPropagation(); forceCacheUpdate(); }} 
                       style={{ marginTop: '0.5rem', backgroundColor: 'var(--text-accent)', color: 'black', border: 'none', height: '2rem', fontSize: '0.75rem' }}
                     >
                       UPDATE NOW
@@ -160,7 +162,7 @@ export default function Settings() {
         </div>
         {tapCount > 0 && tapCount < 5 && (
           <p className="np-text-muted" style={{ fontSize: '0.75rem', marginTop: '0.75rem', color: 'var(--text-accent)' }}>
-             {5 - tapCount} more taps to trigger local cache wipe!
+             {5 - tapCount} more taps to unlock secret protocol!
           </p>
         )}
       </div>
