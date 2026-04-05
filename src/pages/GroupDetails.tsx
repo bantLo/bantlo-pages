@@ -839,6 +839,5 @@ export default function GroupDetails() {
         </div>
       )}
     </div>
-
   );
 }

@@ -205,10 +205,12 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
       <canvas ref={canvasRef} />
       
       {/* HUD */}
-      <div style={{ position: 'absolute', top: '2rem', left: 0, width: '100%', textAlign: 'center', pointerEvents: 'none' }}>
-        <p style={{ margin: 0, fontSize: '3rem', fontWeight: 900, color: 'white', textShadow: '4px 4px 0px #00b772' }}>{score}</p>
-        <p style={{ margin: 0, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>High Score: {highScore}</p>
-      </div>
+      {gameState === 'PLAYING' && (
+        <div style={{ position: 'absolute', top: '2rem', left: 0, width: '100%', textAlign: 'center', pointerEvents: 'none' }}>
+          <p style={{ margin: 0, fontSize: '3rem', fontWeight: 900, color: 'white', textShadow: '4px 4px 0px #00b772' }}>{score}</p>
+          <p style={{ margin: 0, fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>High Score: {highScore}</p>
+        </div>
+      )}
 
       {gameState === 'START' && (
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', width: '80%' }}>
@@ -220,14 +222,25 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
       )}
 
       {gameState === 'OVER' && (
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', width: '80%' }}>
-          <h1 className="np-title" style={{ fontSize: '2rem', marginBottom: '1rem', color: 'var(--text-danger)', border: 'none' }}>CRASHED!</h1>
-          <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '2rem' }}>
-            <p style={{ margin: 0, fontSize: '1rem' }}>Score: <strong>{score}</strong></p>
-            {score >= highScore && score > 0 && <p style={{ color: 'var(--text-accent)', fontSize: '0.7rem', marginTop: '0.4rem' }}>NEW HIGH SCORE! 🏆</p>}
+        <div 
+          style={{ 
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+            backdropFilter: 'blur(10px) brightness(0.35)',
+            transition: 'backdrop-filter 0.5s ease',
+            zIndex: 10001
+          }}
+        >
+          <div style={{ textAlign: 'center', width: '80%', maxWidth: '400px' }}>
+            <h1 className="np-title" style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-danger)', border: 'none', fontWeight: 900 }}>CRASHED!</h1>
+            <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '2rem', background: '#000', border: '2px solid #333', boxShadow: '12px 12px 0px rgba(0,0,0,0.8)' }}>
+              <p style={{ margin: 0, fontSize: '1.2rem', color: 'white' }}>Final Score: <strong>{score}</strong></p>
+              <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Best Protocol Run: {highScore}</p>
+              {score >= highScore && score > 0 && <p style={{ color: 'var(--text-accent)', fontSize: '0.8rem', marginTop: '0.75rem', fontWeight: 'bold' }}>NEW SYSTEM RECORD! 🏆</p>}
+            </div>
+            <NeoButton onClick={resetGame} variant="primary" style={{ width: '100%', height: '3.5rem', fontSize: '1rem' }}>RETRY MISSION</NeoButton>
+            <NeoButton onClick={onClose} style={{ width: '100%', marginTop: '1rem', border: 'none', color: 'var(--text-secondary)' }}>EXIT TO DASHBOARD</NeoButton>
           </div>
-          <NeoButton onClick={resetGame} variant="primary" style={{ width: '100%' }}>RETRY</NeoButton>
-          <NeoButton onClick={onClose} style={{ width: '100%', marginTop: '1rem', border: 'none' }}>EXIT TO DASHBOARD</NeoButton>
         </div>
       )}
 
