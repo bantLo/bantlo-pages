@@ -838,6 +838,13 @@ export default function GroupDetails() {
           </div>
         </div>
       )}
+      
+      <div style={{ marginTop: '3rem', padding: '1.5rem', border: '2px dashed var(--border-color)', textAlign: 'center', opacity: 0.8 }}>
+        <p className="np-text-muted" style={{ fontSize: '0.75rem', margin: 0, letterSpacing: '0.5px' }}>
+          <span style={{ color: 'var(--text-accent)', fontWeight: '900' }}>TIP:</span> Tap the system version 5 times in <span style={{ textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => navigate('/settings')}>Settings</span> to unlock the hidden <span style={{ color: 'var(--text-accent)' }}>FlappyBant</span> protocol. 🎮
+        </p>
+      </div>
     </div>
+
   );
 }
