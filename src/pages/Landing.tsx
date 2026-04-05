@@ -76,6 +76,68 @@ export default function LandingPage() {
             line-height: 1.4;
             max-width: 800px;
           }
+
+          .screenshot-section {
+            padding: 2rem 0;
+            width: 100%;
+            border-top: 2px solid var(--border-color);
+            margin-top: 3rem;
+          }
+          .screenshot-carousel {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 1rem 2rem 2.5rem 2rem;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -2rem; /* Bleed out */
+          }
+          .screenshot-carousel::-webkit-scrollbar {
+            display: none;
+          }
+          .screenshot-card {
+            flex: 0 0 280px;
+            scroll-snap-align: center;
+            border: 2px solid var(--border-color);
+            background: var(--bg-surface);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 6px 6px 0px var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+          }
+          .screenshot-card:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--border-color);
+          }
+          @media (min-width: 768px) {
+            .screenshot-card {
+              flex: 0 0 320px;
+              scroll-snap-align: start;
+            }
+            .screenshot-carousel {
+              margin: 0;
+              padding-left: 0;
+              padding-right: 0;
+            }
+          }
+          .screenshot-card img {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 9/19; /* Mobile screenshot ratio */
+            object-fit: cover;
+            display: block;
+            background: #111;
+          }
+          .screenshot-label {
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            border-top: 2px solid var(--border-color);
+            background: var(--bg-dark);
+            text-align: center;
+            color: var(--text-secondary);
+          }
         `}
       </style>
 
@@ -178,6 +240,21 @@ export default function LandingPage() {
               <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Fast & Focused</h4>
               <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>No bloat. A high-contrast, lightning-fast interface built for one thing: getting your expenses squared up in seconds.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Screenshots Row Integration - Moved to span full width below hero */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '0 2rem' }}>
+        <div className="screenshot-section">
+          <h4 style={{ fontSize: '1rem', textTransform: 'uppercase', marginBottom: '1rem', opacity: 0.8 }}>Inside the Interface</h4>
+          <div className="screenshot-carousel">
+            {Object.entries(import.meta.glob('../assets/screenshots/*.{png,jpg,jpeg,svg}', { eager: true })).map(([path, module]: any, index) => (
+              <div key={path} className="screenshot-card">
+                <img src={module.default} alt={`bantLo Screen ${index + 1}`} loading="lazy" />
+                <div className="screenshot-label">PREVIEW - {index + 1}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

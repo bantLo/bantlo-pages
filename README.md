@@ -25,6 +25,16 @@
 - 📱 **Native PWA**: Bypasses landing pages in standalone mode for a native mobile experience.
 - 🎨 **NeoPop Brutalist UI**: High-contrast, pitch-black themes with tactile mechanical feedback. No fluff, just math.
 
+## 📸 Inside the Interface
+
+| 1. Auth & Login | 2. Your Groups | 3. Ledger Setup | 4. Expense History | 5. Transaction Detail |
+| :---: | :---: | :---: | :---: | :---: |
+| ![Auth](src/assets/screenshots/01_login.jpg) | ![Dashboard](src/assets/screenshots/02_dashboard.jpg) | ![Create](src/assets/screenshots/03_create_group.jpg) | ![History](src/assets/screenshots/04_group_expenses.jpg) | ![Detail](src/assets/screenshots/05_expense_details.jpg) |
+
+| 6. Split Logic | 7. Debt Settlement | 8. Member Management | 9. System Integrity | 10. Account Security |
+| :---: | :---: | :---: | :---: | :---: |
+| ![Logic](src/assets/screenshots/06_add_expense_form.jpg) | ![Balances](src/assets/screenshots/07_group_balances.jpg) | ![Invite](src/assets/screenshots/08_group_management.jpg) | ![Settings](src/assets/screenshots/09_settings_main.jpg) | ![Security](src/assets/screenshots/10_account_settings.jpg) |
+
 ---
 
 ## 🛠️ Self-Hosting Guide
