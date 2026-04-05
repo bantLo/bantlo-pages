@@ -143,7 +143,7 @@ export default function Dashboard() {
   const friendGroups = groups.filter(g => g.is_friend_group);
 
   return (
-    <div className="np-container">
+    <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <UpdatePrompt />
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <Logo />
@@ -342,6 +342,12 @@ export default function Dashboard() {
 
         </div>
       )}
+      
+      <div style={{ marginTop: 'auto', marginBottom: '2rem', padding: '1.5rem', border: '2px dashed rgba(255,255,255,0.05)', textAlign: 'center' }}>
+        <p className="np-text-muted" style={{ fontSize: '0.7rem', margin: 0, letterSpacing: '0.5px' }}>
+          <span style={{ color: 'var(--text-accent)', fontWeight: '900' }}>TIP:</span> Tap the system version 5 times in <Link to="/settings" style={{ color: 'inherit', fontWeight: 'bold', textDecoration: 'underline' }}>Settings</Link> to unlock the not-so hidden <span style={{ color: 'var(--text-accent)' }}>FlappyBant</span> easter egg. 🎮
+        </p>
+      </div>
     </div>
   );
 }
