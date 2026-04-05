@@ -27,13 +27,36 @@
 
 ## 📸 Inside the Interface
 
-| 1. Auth & Login | 2. Your Groups | 3. Ledger Setup | 4. Expense History | 5. Transaction Detail |
-| :---: | :---: | :---: | :---: | :---: |
-| ![Auth](src/assets/screenshots/01_login.jpg) | ![Dashboard](src/assets/screenshots/02_dashboard.jpg) | ![Create](src/assets/screenshots/03_create_group.jpg) | ![History](src/assets/screenshots/04_group_expenses.jpg) | ![Detail](src/assets/screenshots/05_expense_details.jpg) |
-
-| 6. Split Logic | 7. Debt Settlement | 8. Member Management | 9. System Integrity | 10. Account Security |
-| :---: | :---: | :---: | :---: | :---: |
-| ![Logic](src/assets/screenshots/06_add_expense_form.jpg) | ![Balances](src/assets/screenshots/07_group_balances.jpg) | ![Invite](src/assets/screenshots/08_group_management.jpg) | ![Settings](src/assets/screenshots/09_settings_main.jpg) | ![Security](src/assets/screenshots/10_account_settings.jpg) |
+<table width="100%">
+  <tr>
+    <th width="20%">1. Auth & Login</th>
+    <th width="20%">2. Your Groups</th>
+    <th width="20%">3. Ledger Setup</th>
+    <th width="20%">4. Expense History</th>
+    <th width="20%">5. Transaction Detail</th>
+  </tr>
+  <tr>
+    <td><img src="src/assets/screenshots/01_login.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/02_dashboard.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/03_create_group.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/04_group_expenses.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/05_expense_details.jpg" width="100%" /></td>
+  </tr>
+  <tr>
+    <th width="20%">6. Split Logic</th>
+    <th width="20%">7. Debt Settlement</th>
+    <th width="20%">8. Member Management</th>
+    <th width="20%">9. System Integrity</th>
+    <th width="20%">10. Account Security</th>
+  </tr>
+  <tr>
+    <td><img src="src/assets/screenshots/06_add_expense_form.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/07_group_balances.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/08_group_management.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/09_settings_main.jpg" width="100%" /></td>
+    <td><img src="src/assets/screenshots/10_account_settings.jpg" width="100%" /></td>
+  </tr>
+</table>
 
 ---
 
