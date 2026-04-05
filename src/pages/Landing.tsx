@@ -103,15 +103,15 @@ export default function LandingPage() {
         {/* Left/Top Content */}
         <div style={{ flex: 1 }}>
           <h2 style={{ fontSize: '3.5rem', fontWeight: 900, textTransform: 'uppercase', lineHeight: 1.1, marginBottom: '1.5rem' }}>
-            The <span style={{ color: 'var(--text-accent)' }}>Free</span> Split-Engine. <br/>
-            <span style={{ color: 'var(--text-secondary)' }}>Sync Later.</span>
+            The <span style={{ color: 'var(--text-accent)' }}>Free</span> & Open <br/>
+            Expense Splitter.
           </h2>
           
           <p className="np-text-muted" style={{ fontSize: '1.25rem', marginBottom: '2.5rem', maxWidth: '500px' }}>
-            A brutalist, offline-first alternative to Splitwise. Engineered for precision sharing without the "Pro" subscription baggage.
+            The simple, offline-first way to track group expenses. No "Pro" subscriptions, no hidden limits, just pure precision for you and your friends.
           </p>
 
-          <div className="np-section" style={{ borderStyle: 'solid', padding: '1.5rem', marginBottom: '2.5rem', maxWidth: '500px' }}>
+          <div className="np-section" style={{ borderStyle: 'solid', padding: '1.5rem', marginBottom: '1.5rem', maxWidth: '500px' }}>
             {/* Desktop Dashboard Link */}
             <div className="desktop-only" style={{ flexDirection: 'column' }}>
               <p style={{ fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase' }}>Access your Dashboard</p>
@@ -142,6 +142,21 @@ export default function LandingPage() {
               )}
             </div>
           </div>
+
+          {/* GitHub Section */}
+          <div className="np-section" style={{ borderStyle: 'dashed', padding: '1.5rem', marginBottom: '2.5rem', maxWidth: '500px' }}>
+            <p style={{ fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Open Source Heritage</p>
+            <p className="np-text-muted" style={{ fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+              Audit the logic, fork the engine, or contribute to the offline-first revolution. No black boxes.
+            </p>
+            <NeoButton 
+              onClick={() => window.open('https://github.com/orgs/bantLo/repositories', '_blank')}
+              variant="default" 
+              style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem' }}
+            >
+              View GitHub Repository ↗
+            </NeoButton>
+          </div>
         </div>
 
         {/* Right/Bottom Graphic (Features Outline) */}
@@ -150,18 +165,18 @@ export default function LandingPage() {
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ padding: '1.5rem', border: '2px solid var(--border-color)', background: 'var(--bg-surface)' }}>
-              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Offline-First Ecosystem</h4>
-              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>Built heavily on Service Workers and IndexedDB. You can load your groups and view debts deep in the mountains without a single cell tower.</p>
+              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Works Offline</h4>
+              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>Add expenses and check balances anywhere. Your data is stored locally and syncs automatically when you're back on the grid.</p>
             </div>
             
             <div style={{ padding: '1.5rem', border: '2px dashed var(--border-color)', background: 'var(--bg-surface)' }}>
-              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Advanced Split Logic (Free)</h4>
-              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>bantLo natively handles Multi-Payer splits and Exact Shares for free. No subscriptions, no limits, just math.</p>
+              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Smarter Splitting</h4>
+              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>Split by percentages, exact amounts, or custom shares. We handle the complex math so you don't have to — completely free.</p>
             </div>
 
             <div style={{ padding: '1.5rem', border: '2px solid var(--border-color)', background: 'var(--bg-surface)' }}>
-              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Brutalist NeoPop UI</h4>
-              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>No fluff. High-contrast, tactile mechanical buttons, and aggressive visual layouts designed for immediate read-response in pure sunlight.</p>
+              <h4 style={{ color: 'var(--text-accent)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Fast & Focused</h4>
+              <p className="np-text-muted" style={{ fontSize: '0.9rem' }}>No bloat. A high-contrast, lightning-fast interface built for one thing: getting your expenses squared up in seconds.</p>
             </div>
           </div>
         </div>
