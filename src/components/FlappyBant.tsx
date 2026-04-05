@@ -12,17 +12,24 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   const [highScore, setHighScore] = useState(Number(localStorage.getItem('flappy_high_score') || 0));
 
   // Game Constants
-  const GRAVITY = 0.32;
-  const JUMP = -6.5;
-  const PIPE_SPEED = 2.5;
-  const PIPE_SPAWN_RATE = 120; // more distance between pipes
-  const PIPE_GAP = 200; // much wider gap
+  const GRAVITY = 0.28;
+  const JUMP = -6.2;
+  const PIPE_SPEED = 2.2;
+  const PIPE_SPAWN_RATE = 130; 
+  const PIPE_GAP = 240; 
 
   // Mutable Game Refs
   const bird = useRef({ y: 300, v: 0, r: 12 });
   const pipes = useRef<any[]>([]);
   const frameId = useRef<number>(0);
   const count = useRef(0);
+  const gameStateRef = useRef<'START' | 'PLAYING' | 'OVER'>(gameState);
+  const [isShaking, setIsShaking] = useState(false);
+
+  // Sync state to ref for animation loop stability
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
   const resizeCanvas = () => {
     if (canvasRef.current) {
@@ -46,13 +53,13 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   };
 
   const jump = () => {
-    if (gameState === 'START') resetGame();
-    else if (gameState === 'PLAYING') bird.current.v = JUMP;
-    else if (gameState === 'OVER') resetGame();
+    if (gameStateRef.current === 'START') resetGame();
+    else if (gameStateRef.current === 'PLAYING') bird.current.v = JUMP;
+    else if (gameStateRef.current === 'OVER') resetGame();
   };
 
   const update = () => {
-    if (gameState !== 'PLAYING') return;
+    if (gameStateRef.current !== 'PLAYING') return;
 
     // Physics
     bird.current.v += GRAVITY;
@@ -101,7 +108,12 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   };
 
   const handleGameOver = () => {
+    if (gameStateRef.current === 'OVER') return;
+    
     setGameState('OVER');
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 200);
+    
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem('flappy_high_score', score.toString());
@@ -110,6 +122,12 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
 
   const draw = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    // Camera Shake Logic
+    if (isShaking) {
+      ctx.save();
+      ctx.translate(Math.random() * 8 - 4, Math.random() * 8 - 4);
+    }
 
     // Background
     ctx.fillStyle = '#0a0a0a';
@@ -157,11 +175,12 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
     ctx.fillRect(-bird.current.r + 4, -bird.current.r + 4, bird.current.r*2 - 8, bird.current.r*2 - 8);
     
     ctx.restore();
+    if (isShaking) ctx.restore();
   };
 
   useEffect(() => {
     const loop = () => {
-      if (gameState === 'PLAYING') update();
+      update();
       if (canvasRef.current) {
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) draw(ctx);
@@ -170,7 +189,7 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
     };
     frameId.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frameId.current);
-  }, [gameState, score]);
+  }, []); // Run once, use refs/sync for variables
 
   return (
     <div 
