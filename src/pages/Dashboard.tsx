@@ -16,6 +16,31 @@ export default function Dashboard() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
   const [newFriendEmail, setNewFriendEmail] = useState('');
+  
+  // Rotating Tip Logic
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [isTipVisible, setIsTipVisible] = useState(false);
+  const TIPS = [
+    <>💡 <strong>TIP:</strong> Tap the system version 5x in <Link to="/settings" style={{ color: 'var(--text-accent)' }}>Settings</Link> to unlock the <strong>FlappyBant</strong> easter egg. 🎮</>,
+    <>🔌 <strong>OFFLINE READY:</strong> bantLo works perfectly without internet. Your changes will sync automatically once you're back online. 🛡️</>,
+    <>📱 <strong>PWA TIP:</strong> Open this in your mobile browser and "Add to Home Screen" for a full-screen, native experience. ⚡</>,
+    <>🧮 <strong>PRECISION MATH:</strong> We manage fractional pennies across splits to ensure your group total is always 100% accurate. 🎯</>,
+    <>👥 <strong>SHARES SPLIT:</strong> Use "By Shares" when adding an expense for proportional splits (e.g., 2:1 for couples vs singles). ⚖️</>
+  ];
+
+  useEffect(() => {
+    // Pick a random tip and show it
+    const randomIndex = Math.floor(Math.random() * TIPS.length);
+    setCurrentTipIndex(randomIndex);
+    setIsTipVisible(true);
+
+    // Hide after 5 seconds
+    const timer = setTimeout(() => {
+      setIsTipVisible(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const COMMON_CURRENCIES = ['USD', 'INR', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'AED', 'SGD', 'CHF'];
 
@@ -343,9 +368,20 @@ export default function Dashboard() {
         </div>
       )}
       
-      <div style={{ marginTop: 'auto', marginBottom: '2rem', padding: '1.5rem', border: '2px dashed rgba(255,255,255,0.05)', textAlign: 'center' }}>
-        <p className="np-text-muted" style={{ fontSize: '0.7rem', margin: 0, letterSpacing: '0.5px' }}>
-          <span style={{ color: 'var(--text-accent)', fontWeight: '900' }}>TIP:</span> Tap the system version 5 times in <Link to="/settings" style={{ color: 'inherit', fontWeight: 'bold', textDecoration: 'underline' }}>Settings</Link> to unlock the not-so hidden <span style={{ color: 'var(--text-accent)' }}>FlappyBant</span> easter egg. 🎮
+      <div 
+        style={{ 
+          marginTop: 'auto', 
+          padding: '1.25rem 1.5rem 0.25rem 1.5rem', 
+          marginBottom: '-0.5rem',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          textAlign: 'center',
+          opacity: isTipVisible ? 1 : 0,
+          visibility: isTipVisible ? 'visible' : 'hidden',
+          transition: 'opacity 1s ease-in-out, visibility 1s'
+        }}
+      >
+        <p className="np-text-muted" style={{ fontSize: '0.72rem', margin: 0, letterSpacing: '0.5px', lineHeight: '1.4' }}>
+          {TIPS[currentTipIndex]}
         </p>
       </div>
     </div>

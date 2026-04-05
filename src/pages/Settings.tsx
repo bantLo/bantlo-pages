@@ -168,12 +168,12 @@ export default function Settings() {
       </div>
 
       <div className="np-section" style={{ textAlign: 'center', borderStyle: 'dotted' }}>
-        <p className="np-text-muted" style={{ marginBottom: '1rem' }}>Support & Cache</p>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Troubleshoot</p>
         <NeoButton style={{ width: '100%', borderColor: 'var(--text-secondary)' }} onClick={() => setShowCacheModal(true)}>
-          Troubleshoot App Cache
+          Troubleshoot
         </NeoButton>
         <p className="np-text-muted" style={{ fontSize: '0.7rem', marginTop: '0.75rem', textAlign: 'center' }}>
-          Tip: If facing UI sync issues, try signing out and logging back in to reset the secure session.
+          Tip: If facing UI sync issues, try the <strong>Sync with Online DB</strong> tool inside.
         </p>
       </div>
 
