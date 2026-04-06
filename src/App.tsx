@@ -43,7 +43,9 @@ function App() {
   if (loading) {
     return (
       <div className="np-container" style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-        <p className="np-title" style={{ border: 'none', fontSize: '1.2rem', animation: 'pulse 1.5s infinite' }}>Loading bantLo...</p>
+        <p className="np-title" style={{ border: 'none', fontSize: '1.2rem', animation: 'pulse 1.5s infinite', textTransform: 'none' }}>
+          Loading {"["}bant<span style={{ color: 'var(--text-accent)' }}>Lo</span>{"]"}...
+        </p>
       </div>
     );
   }

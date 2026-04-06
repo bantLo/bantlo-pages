@@ -23,6 +23,7 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   const pipes = useRef<any[]>([]);
   const frameId = useRef<number>(0);
   const count = useRef(0);
+  const scoreRef = useRef(0);
   const gameStateRef = useRef<'START' | 'PLAYING' | 'OVER'>(gameState);
   const [isShaking, setIsShaking] = useState(false);
 
@@ -30,6 +31,10 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
 
   const resizeCanvas = () => {
     if (canvasRef.current) {
@@ -48,6 +53,7 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
     bird.current = { y: window.innerHeight / 2, v: 0, r: 12 };
     pipes.current = [];
     count.current = 0;
+    scoreRef.current = 0;
     setScore(0);
     setGameState('PLAYING');
   };
@@ -84,7 +90,8 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
       // Score Detection
       if (!p.passed && p.x + 60 < window.innerWidth / 2 - bird.current.r) {
         p.passed = true;
-        setScore(s => s + 1);
+        scoreRef.current += 1;
+        setScore(scoreRef.current);
       }
 
       // Collision Detection
@@ -114,9 +121,13 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 200);
     
-    if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('flappy_high_score', score.toString());
+    // Use the latest score from Ref to avoid closure staleness
+    const currentScore = scoreRef.current;
+    const currentHigh = Number(localStorage.getItem('flappy_high_score') || 0);
+
+    if (currentScore > currentHigh) {
+      setHighScore(currentScore);
+      localStorage.setItem('flappy_high_score', currentScore.toString());
     }
   };
 
