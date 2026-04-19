@@ -17,7 +17,16 @@ export default function Settings() {
   const [versionData, setVersionData] = useState<any>(null);
   const [isPWA, setIsPWA] = useState(false);
 
+  const [userName, setUserName] = useState('');
+
   useEffect(() => {
+    // Fetch User Name
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || '');
+      }
+    });
+
     // Detect PWA Status
     const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
     setIsPWA(standalone);
@@ -59,8 +68,11 @@ export default function Settings() {
   return (
     <div className="np-container">
       {showEasterEgg && <FlappyBant onClose={() => setShowEasterEgg(false)} />}
-      <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
-        <h1 className="np-title" style={{ margin: 0 }}>Settings</h1>
+      <div className="np-flex-between" style={{ marginBottom: '1.5rem', alignItems: 'flex-start' }}>
+        <div>
+          <h1 className="np-title" style={{ margin: 0 }}>Settings</h1>
+          {userName && <p style={{ margin: 0, marginTop: '0.25rem', fontSize: '1.2rem', color: 'var(--text-accent)', fontWeight: 900, letterSpacing: '0.5px' }}>Hey there, {userName.split(' ')[0]}</p>}
+        </div>
         <BackButton fallback="/dashboard" />
       </div>
 
