@@ -16,6 +16,15 @@ export default function Dashboard() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
   const [newFriendEmail, setNewFriendEmail] = useState('');
+
+  const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
   
   // Rotating Tip Logic
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
@@ -142,10 +151,11 @@ export default function Dashboard() {
       setNewGroupName('');
       setNewGroupCurrency('USD');
       setShowCreate(false);
+      setToastMessage({ text: 'Group created successfully!', type: 'success' });
       loadGroups(); // Refresh list
     } catch (error: any) {
       console.error(error);
-      alert('Error creating group: ' + (error.message || 'Check database connection'));
+      setToastMessage({ text: 'Error creating group: ' + (error.message || 'Check database connection'), type: 'error' });
     }
   };
 
@@ -157,10 +167,11 @@ export default function Dashboard() {
       await addFriendByEmail(newFriendEmail.trim());
       setNewFriendEmail('');
       setShowAddFriend(false);
+      setToastMessage({ text: 'Friend added successfully!', type: 'success' });
       loadGroups();
     } catch (error: any) {
       console.error(error);
-      alert(error.message || 'Error adding friend. They might need to create an account first.');
+      setToastMessage({ text: error.message || 'Error adding friend.', type: 'error' });
     }
   };
 
@@ -169,6 +180,28 @@ export default function Dashboard() {
 
   return (
     <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--bg-dark)',
+          border: '2px solid',
+          borderColor: toastMessage.type === 'error' ? 'var(--text-danger)' : (toastMessage.type === 'info' ? 'cyan' : 'var(--text-accent)'),
+          color: toastMessage.type === 'error' ? 'var(--text-danger)' : (toastMessage.type === 'info' ? 'cyan' : 'black'),
+          backgroundColor: toastMessage.type === 'success' ? 'var(--text-accent)' : 'var(--bg-dark)',
+          padding: '0.75rem 1.5rem',
+          zIndex: 9999,
+          boxShadow: '4px 4px 0px rgba(0,0,0,0.8)',
+          minWidth: '250px',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          transition: 'all 0.3s ease-in-out'
+        }}>
+          {toastMessage.text}
+        </div>
+      )}
       <UpdatePrompt />
       <div className="np-flex-between" style={{ marginBottom: '1.5rem' }}>
         <Logo />

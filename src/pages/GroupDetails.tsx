@@ -36,6 +36,15 @@ export default function GroupDetails() {
   const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
 
+  const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
   useEffect(() => {
     if (id) {
       loadGroupData(id);
@@ -168,14 +177,14 @@ export default function GroupDetails() {
        fetchExpenseCount(id).then(setExpenseCount);
     }
     
-    alert('Expense successfully saved!');
+    setToastMessage({ text: 'Expense successfully saved!', type: 'success' });
   };
 
   const handleSettlementSaved = () => {
     setShowAddSettlement(false);
     setQuickSettle(null);
     if (id) loadGroupData(id);
-    alert('Payment successfully recorded!');
+    setToastMessage({ text: 'Payment successfully recorded!', type: 'success' });
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -184,12 +193,12 @@ export default function GroupDetails() {
     setMemberLoading(true);
     try {
       await addMemberByEmail(id, newMemberEmail);
-      alert('Member successfully added!');
+      setToastMessage({ text: 'Member successfully added!', type: 'success' });
       setShowAddMember(false);
       setNewMemberEmail('');
       loadGroupData(id);
     } catch (err: any) {
-      alert(err.message || 'Failed to add member');
+      setToastMessage({ text: err.message || 'Failed to add member', type: 'error' });
     } finally {
       setMemberLoading(false);
     }
@@ -201,7 +210,7 @@ export default function GroupDetails() {
       await deleteExpense(expenseId);
       loadGroupData(id);
     } catch(err: any) {
-      alert('Failed to delete expense: ' + err.message);
+      setToastMessage({ text: 'Failed to delete expense: ' + err.message, type: 'error' });
     }
   };
 
@@ -210,7 +219,7 @@ export default function GroupDetails() {
     const balance = balances.find(b => b.user_id === userId)?.balance || 0;
     
     if (!isLast && Math.abs(Number(balance)) > 0.01) {
-      alert(`Cannot remove/leave. This user has an active balance of ${group.currency} ${Number(balance).toFixed(2)}. All debts must be settled (exactly 0.00) first.`);
+      setToastMessage({ text: `Cannot remove/leave. This user has an active balance of ${group.currency} ${Number(balance).toFixed(2)}. All debts must be settled (exactly 0.00) first.`, type: 'error' });
       return;
     }
 
@@ -229,7 +238,7 @@ export default function GroupDetails() {
         loadGroupData(id);
       }
     } catch(err: any) {
-      alert('Action failed: ' + err.message);
+      setToastMessage({ text: 'Action failed: ' + err.message, type: 'error' });
     }
   };
 
@@ -241,12 +250,12 @@ export default function GroupDetails() {
       navigator.clipboard.writeText(link);
       
       if (invite.reused) {
-        alert('Active link found! Reusing existing invite link (One link per user per 12h allowed). Copied to clipboard!');
+        setToastMessage({ text: 'Reusing existing invite link! Copied to clipboard!', type: 'info' });
       } else {
-        alert('Expirable invite link created and copied to clipboard! (Valid for 24h). Next fresh link available in 12h.');
+        setToastMessage({ text: 'Expirable invite link created and copied to clipboard!', type: 'success' });
       }
     } catch (err: any) {
-      alert('Failed to obtain invite link');
+      setToastMessage({ text: 'Failed to obtain invite link', type: 'error' });
     }
   };
 
@@ -257,7 +266,7 @@ export default function GroupDetails() {
       await deleteGroup(id);
       navigate('/dashboard');
     } catch(err: any) {
-      alert('Failed to delete group: ' + err.message);
+      setToastMessage({ text: 'Failed to delete group: ' + err.message, type: 'error' });
     }
   };
 
@@ -268,9 +277,9 @@ export default function GroupDetails() {
     try {
       await updateGroupSettings(id!, { name: editGroupName, currency: editGroupCurrency });
       setGroup({ ...group, name: editGroupName, currency: editGroupCurrency });
-      alert('Settings updated!');
+      setToastMessage({ text: 'Settings updated!', type: 'success' });
     } catch(err) {
-      alert('Failed to update group settings');
+      setToastMessage({ text: 'Failed to update group settings', type: 'error' });
     }
   };
 
@@ -324,6 +333,29 @@ export default function GroupDetails() {
 
   return (
     <div className="np-container">
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--bg-dark)',
+          border: '2px solid',
+          borderColor: toastMessage.type === 'error' ? 'var(--text-danger)' : (toastMessage.type === 'info' ? 'cyan' : 'var(--text-accent)'),
+          color: toastMessage.type === 'error' ? 'var(--text-danger)' : (toastMessage.type === 'info' ? 'cyan' : 'black'),
+          backgroundColor: toastMessage.type === 'success' ? 'var(--text-accent)' : 'var(--bg-dark)',
+          padding: '0.75rem 1.5rem',
+          zIndex: 9999,
+          boxShadow: '4px 4px 0px rgba(0,0,0,0.8)',
+          minWidth: '250px',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          transition: 'all 0.3s ease-in-out'
+        }}>
+          {toastMessage.text}
+        </div>
+      )}
+
       {expenseCount >= 300 && (
         <div className="np-section" style={{ borderStyle: 'solid', borderColor: 'var(--text-danger)', marginBottom: '1.5rem', background: 'rgba(255,50,50,0.1)' }}>
           <h2 style={{ fontSize: '1.2rem', color: 'var(--text-danger)', marginTop: 0 }}>Limit Exceeded (300+ Logs)</h2>

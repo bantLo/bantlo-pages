@@ -24,6 +24,16 @@ export default function Auth() {
     }
   }, []);
 
+  // Auto-dismiss messages after 5 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting.current) return;

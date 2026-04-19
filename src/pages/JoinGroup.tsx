@@ -12,6 +12,14 @@ export default function JoinGroup() {
   const [error, setError] = useState('');
   const [invite, setInvite] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   useEffect(() => {
     if (inviteId) {
@@ -45,7 +53,7 @@ export default function JoinGroup() {
       const groupId = await acceptGroupInvite(inviteId!);
       navigate(`/groups/${groupId}`);
     } catch (err: any) {
-      alert(err.message || 'Failed to join group');
+      setToastMessage({ text: err.message || 'Failed to join group', type: 'error' });
     } finally {
       setIsProcessing(false);
     }
@@ -73,6 +81,28 @@ export default function JoinGroup() {
 
   return (
     <div className="np-container">
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--bg-dark)',
+          border: '2px solid',
+          borderColor: toastMessage.type === 'error' ? 'var(--text-danger)' : (toastMessage.type === 'info' ? 'cyan' : 'var(--text-accent)'),
+          color: toastMessage.type === 'error' ? 'var(--text-danger)' : (toastMessage.type === 'info' ? 'cyan' : 'black'),
+          backgroundColor: toastMessage.type === 'success' ? 'var(--text-accent)' : 'var(--bg-dark)',
+          padding: '0.75rem 1.5rem',
+          zIndex: 9999,
+          boxShadow: '4px 4px 0px rgba(0,0,0,0.8)',
+          minWidth: '250px',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          transition: 'all 0.3s ease-in-out'
+        }}>
+          {toastMessage.text}
+        </div>
+      )}
       <Logo />
       <div className="np-section" style={{ marginTop: '2rem', borderColor: 'var(--text-accent)' }}>
         <p className="np-text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Invitation Received ›</p>

@@ -16,6 +16,19 @@ export default function UpdatePassword() {
     localStorage.removeItem('bantlo_recovery');
   }, []);
 
+  // Auto-dismiss messages after 5 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        // Do not auto-dismiss if it's the success message right before redirect
+        if (message.type !== 'success') {
+          setMessage(null);
+        }
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
