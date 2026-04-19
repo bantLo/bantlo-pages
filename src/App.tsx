@@ -12,6 +12,7 @@ import LandingPage from './pages/Landing';
 import JoinGroup from './pages/JoinGroup';
 import About from './pages/About';
 import AccountSettings from './pages/AccountSettings';
+import UpdatePassword from './pages/UpdatePassword';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -26,6 +27,12 @@ function App() {
       setIsPWA(true);
     }
 
+    // Pre-flight check for password recovery links (since getSession might complete before onAuthStateChange)
+    const isRecovery = window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery');
+    if (isRecovery) {
+      localStorage.setItem('bantlo_post_login_redirect', '/update-password');
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -33,7 +40,10 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        localStorage.setItem('bantlo_post_login_redirect', '/update-password');
+      }
       setSession(session);
     });
 
@@ -53,8 +63,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* If installed as PWA and not logged in, force to Auth. Otherwise Landing Page. Logged in always goes to Dashboard. */}
-        <Route path="/" element={!session ? (isPWA ? <Navigate to="/auth" /> : <LandingPage />) : <Navigate to="/dashboard" />} />
+        {/* If installed as PWA and not logged in, force to Auth. Otherwise Landing Page. Logged in always goes to Dashboard (or redirect). */}
+        <Route path="/" element={!session ? (isPWA ? <Navigate to="/auth" /> : <LandingPage />) : (
+          localStorage.getItem('bantlo_post_login_redirect') ? (
+            (() => {
+              const url = localStorage.getItem('bantlo_post_login_redirect')!;
+              localStorage.removeItem('bantlo_post_login_redirect');
+              return <Navigate to={url} />;
+            })()
+          ) : <Navigate to="/dashboard" />
+        )} />
         
         <Route path="/auth" element={!session ? <Auth /> : (
           localStorage.getItem('bantlo_post_login_redirect') ? (
@@ -71,6 +89,7 @@ function App() {
         <Route path="/groups/:id" element={session ? <GroupDetails /> : <Navigate to="/auth" />} />
         <Route path="/settings" element={session ? <Settings /> : <Navigate to="/auth" />} />
         <Route path="/settings/account" element={session ? <AccountSettings /> : <Navigate to="/auth" />} />
+        <Route path="/update-password" element={session ? <UpdatePassword /> : <Navigate to="/auth" />} />
         <Route path="/join/:inviteId" element={<JoinGroup />} />
         <Route path="/about" element={<About />} />
         
