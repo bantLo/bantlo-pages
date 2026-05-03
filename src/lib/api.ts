@@ -196,7 +196,7 @@ export async function deleteExpense(expenseId: string) {
 }
 
 export async function updateExpenseDescription(expenseId: string, newDesc: string) {
-  const { error } = await supabase.from('expenses').update({ description: newDesc.substring(0, 30) }).eq('id', expenseId);
+  const { error } = await supabase.from('expenses').update({ description: newDesc.substring(0, 100) }).eq('id', expenseId);
   if (error) throw error;
 }
 

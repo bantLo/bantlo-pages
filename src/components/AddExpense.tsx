@@ -227,7 +227,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
-          maxLength={30}
+          maxLength={100}
           style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', fontFamily: 'inherit' }}
         />
       </div>

@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS expenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
   amount NUMERIC(10,2) NOT NULL,
-  description VARCHAR(30) NOT NULL,
+  description TEXT NOT NULL,
   notes TEXT,
   split_type SMALLINT NOT NULL CHECK (split_type IN (0, 1, 2)),
   is_settlement BOOLEAN DEFAULT false,

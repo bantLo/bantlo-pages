@@ -1,5 +1,5 @@
 {
-  "version": "1.9.4",
-  "message": "Protocol 1.9.4: System Stability. Fixed High Score replication in FlappyBant secret game. Refined initial loading visuals with branded [bantLo] sequence.",
-  "published_at": "2026-04-06T07:32:00.000Z"
+  "version": "1.9.5",
+  "message": "Protocol 1.9.5: Extended capacity. Increased expense description limits to 100 characters for more detailed record keeping. Precision remains the core priority.",
+  "published_at": "2026-05-03T10:13:00.000Z"
 }
