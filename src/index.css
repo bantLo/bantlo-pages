@@ -1,5 +1,9 @@
 /* NeoPop Pitch-Black Design System */
 
+html {
+  scrollbar-gutter: stable;
+}
+
 :root {
   /* Colors */
   --bg-dark: #000000;
@@ -49,7 +53,7 @@ body {
 
 @media (min-width: 1024px) {
   .np-container {
-    max-width: 1100px;
+    max-width: 1400px;
   }
 }
 
@@ -155,7 +159,7 @@ body {
   .np-grid-desktop {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
+    gap: 2rem;
     align-items: start;
   }
 }
@@ -170,4 +174,42 @@ body {
     display: inline-flex !important;
   }
 }
+
+/* Responsive visibility utilities */
+.np-mobile-only {
+  display: inline-block !important;
+}
+
+@media (min-width: 1024px) {
+  .np-mobile-only {
+    display: none !important;
+  }
+}
+
+.np-desktop-only-block {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .np-desktop-only-block {
+    display: block !important;
+  }
+}
+
+/* Two-column layout for desktop expenses page */
+.np-expenses-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .np-expenses-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
 
