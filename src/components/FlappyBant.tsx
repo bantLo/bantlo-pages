@@ -5,7 +5,7 @@ interface FlappyBantProps {
   onClose: () => void;
 }
 
-// dynamic synthesizer helper using Web Audio API for retro arcade sound effects
+// Dynamic synthesizer helper using Web Audio API for retro arcade sound effects
 class SoundEffects {
   private ctx: AudioContext | null = null;
 
@@ -125,9 +125,9 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   // Game loop timing & physics accumulator
   const lastTime = useRef<number | null>(null);
   const physicsAccumulator = useRef(0);
-  const PHYSICS_TS = 16.6667; // 60 FPS target physics step (16.67ms)
+  const PHYSICS_TS = 16.6667; // 60 FPS target physics step
 
-  // Camera Shake & Particle system state
+  // Camera Shake & NeoPop Brutalist Particle state
   const [isShaking, setIsShaking] = useState(false);
   const bgOffset = useRef(0);
   const bgParticles = useRef<{ x: number; y: number; size: number; speed: number; alpha: number }[]>([]);
@@ -142,16 +142,16 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
     scoreRef.current = score;
   }, [score]);
 
-  // Initialize background star particles on mount
+  // Initialize background particles on mount
   useEffect(() => {
     const list = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 25; i++) {
       list.push({
         x: Math.random() * GAME_WIDTH,
         y: Math.random() * GAME_HEIGHT,
-        size: Math.random() * 2 + 1,
-        speed: Math.random() * 0.4 + 0.1,
-        alpha: Math.random() * 0.5 + 0.3
+        size: Math.random() * 3 + 2, // slightly larger, blocky stars
+        speed: Math.random() * 0.35 + 0.1,
+        alpha: Math.random() * 0.4 + 0.4
       });
     }
     bgParticles.current = list;
@@ -197,7 +197,7 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   }, []);
 
   const update = (dt: number) => {
-    // Parallax background & particles update independent of playing status to keep the UI alive
+    // Parallax background updates always run to keep UI active
     bgOffset.current = (bgOffset.current + PIPE_SPEED * 0.25 * dt) % 40;
     bgParticles.current.forEach(p => {
       p.x -= p.speed * dt;
@@ -209,18 +209,18 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
 
     if (gameStateRef.current !== 'PLAYING') return;
 
-    // Add glowing trail particle
+    // Add blocky trail particle
     trail.current.push({
       x: GAME_WIDTH / 2,
       y: bird.current.y,
-      size: bird.current.r * 0.8,
-      alpha: 0.6
+      size: bird.current.r * 0.7,
+      alpha: 0.7
     });
 
     // Update trail particles
     trail.current.forEach(t => {
       t.x -= PIPE_SPEED * dt;
-      t.alpha -= 0.04 * dt;
+      t.alpha -= 0.05 * dt;
     });
     trail.current = trail.current.filter(t => t.alpha > 0 && t.x > -50);
 
@@ -293,27 +293,25 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
   const draw = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Camera Shake Logic
+    // Camera Shake Logic (Brutalist style: slightly larger blocky offset)
     if (isShaking) {
       ctx.save();
-      ctx.translate(Math.random() * 12 - 6, Math.random() * 12 - 6);
+      ctx.translate(Math.random() * 16 - 8, Math.random() * 16 - 8);
     }
 
-    // Background
-    ctx.fillStyle = '#050505';
+    // Background (Flat Pitch-black to match bantLo dark palette)
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-    // Parallax background particles
+    // Parallax background particles (Sharp flat square pixels)
     bgParticles.current.forEach(p => {
       ctx.fillStyle = `rgba(0, 255, 102, ${p.alpha})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     });
 
-    // Parallax background grid
-    ctx.strokeStyle = 'rgba(0, 255, 102, 0.05)';
-    ctx.lineWidth = 1.5;
+    // Parallax background grid (Flat, sharp borders)
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 2;
     for (let i = -bgOffset.current; i < GAME_WIDTH + 40; i += 40) {
       ctx.beginPath();
       ctx.moveTo(i, 0);
@@ -327,87 +325,66 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
       ctx.stroke();
     }
 
-    // Draw bird trail
+    // Draw bird trail (Flat, fading square segments)
     trail.current.forEach(p => {
       ctx.fillStyle = `rgba(0, 255, 102, ${p.alpha})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     });
 
-    // Pipes (Neo styled with neon green gradient & border highlight)
+    // Pipes (Strict NeoPop Brutalist: Solid flat green fill, thick black outlines)
     pipes.current.forEach(p => {
-      const grad = ctx.createLinearGradient(p.x, 0, p.x + 60, 0);
-      grad.addColorStop(0, '#005c36');
-      grad.addColorStop(0.3, '#00ff66');
-      grad.addColorStop(1, '#003d24');
-
-      ctx.fillStyle = grad;
-      ctx.strokeStyle = '#00ff66';
-      ctx.lineWidth = 2.5;
+      ctx.fillStyle = '#00ff66'; // Flat Accent Neon Green
+      ctx.strokeStyle = '#ffffff'; // White contrasting outline
+      ctx.lineWidth = 3.5;
       
       // Top Pipe
       ctx.fillRect(p.x, 0, 60, p.h);
-      ctx.strokeRect(p.x, -5, 60, p.h + 5);
+      ctx.strokeRect(p.x, -10, 60, p.h + 10);
       
       // Bottom Pipe
       ctx.fillRect(p.x, p.h + PIPE_GAP, 60, GAME_HEIGHT - (p.h + PIPE_GAP));
-      ctx.strokeRect(p.x, p.h + PIPE_GAP, 60, GAME_HEIGHT - (p.h + PIPE_GAP) + 5);
+      ctx.strokeRect(p.x, p.h + PIPE_GAP, 60, GAME_HEIGHT - (p.h + PIPE_GAP) + 10);
       
-      // Pipe Lips (Slightly wider)
-      const lipGrad = ctx.createLinearGradient(p.x - 5, 0, p.x + 65, 0);
-      lipGrad.addColorStop(0, '#007042');
-      lipGrad.addColorStop(0.3, '#00ff66');
-      lipGrad.addColorStop(1, '#004d2d');
-      
-      ctx.fillStyle = lipGrad;
-      
-      // Top Pipe Lip
-      ctx.fillRect(p.x - 5, p.h - 18, 70, 18);
-      ctx.strokeRect(p.x - 5, p.h - 18, 70, 18);
+      // Top Pipe Lip (Flat blocky lip)
+      ctx.fillStyle = '#ffffff'; // contrasting white lip fill
+      ctx.fillRect(p.x - 6, p.h - 18, 72, 18);
+      ctx.strokeRect(p.x - 6, p.h - 18, 72, 18);
       
       // Bottom Pipe Lip
-      ctx.fillRect(p.x - 5, p.h + PIPE_GAP, 70, 18);
-      ctx.strokeRect(p.x - 5, p.h + PIPE_GAP, 70, 18);
+      ctx.fillRect(p.x - 6, p.h + PIPE_GAP, 72, 18);
+      ctx.strokeRect(p.x - 6, p.h + PIPE_GAP, 72, 18);
     });
 
-    // Bird (Stylized bantLo Square with neon glow and wing flapping)
+    // Bird (NeoPop blocky bird: flat white square, thick black border, neon green wing)
     const birdX = GAME_WIDTH / 2;
     ctx.save();
     ctx.translate(birdX, bird.current.y);
     const rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 6, bird.current.v * 0.06));
     ctx.rotate(rotation);
     
-    // Shadow glow
-    ctx.shadowColor = '#00ff66';
-    ctx.shadowBlur = 15;
-    
-    // Outer Border (Neon Green/White)
+    // Draw flat shadow offset (Brutalist style: hard offset duplicate)
+    ctx.fillStyle = '#111111';
+    const shadowOffset = 4;
+    ctx.fillRect(-bird.current.r + shadowOffset, -bird.current.r + shadowOffset, bird.current.r * 2, bird.current.r * 2);
+
+    // Outer Bird Body (White square, thick black outline)
     ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#00ff66';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 3.5;
     
-    // Rounded body
     const size = bird.current.r * 2;
-    ctx.beginPath();
-    ctx.roundRect(-bird.current.r, -bird.current.r, size, size, 6);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fillRect(-bird.current.r, -bird.current.r, size, size);
+    ctx.strokeRect(-bird.current.r, -bird.current.r, size, size);
     
-    // Eye
-    ctx.shadowBlur = 0; 
-    ctx.fillStyle = '#0a0a0a';
-    ctx.beginPath();
-    ctx.arc(bird.current.r * 0.3, -bird.current.r * 0.3, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    // Eye (Square pupil)
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(bird.current.r * 0.15, -bird.current.r * 0.5, 6, 6);
     
-    // Flapping Wing
-    const wingOffset = Math.sin(Date.now() * 0.015) * 3;
+    // Flat Wing (Neon green flat square, thick black outline, flapping)
+    const wingOffset = Math.sin(Date.now() * 0.015) > 0 ? 2 : -2;
     ctx.fillStyle = '#00ff66';
-    ctx.beginPath();
-    ctx.roundRect(-bird.current.r * 0.8, -bird.current.r * 0.2 + wingOffset, bird.current.r * 0.8, bird.current.r * 0.6, 3);
-    ctx.fill();
-    ctx.stroke();
+    ctx.fillRect(-bird.current.r * 0.75, -bird.current.r * 0.25 + wingOffset, bird.current.r * 0.8, bird.current.r * 0.6);
+    ctx.strokeRect(-bird.current.r * 0.75, -bird.current.r * 0.25 + wingOffset, bird.current.r * 0.8, bird.current.r * 0.6);
     
     ctx.restore();
     if (isShaking) ctx.restore();
@@ -454,7 +431,7 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
         width: '100%', 
         height: '100dvh', 
         zIndex: 10000, 
-        backgroundColor: '#050505',
+        backgroundColor: '#000000',
         overflow: 'hidden',
         touchAction: 'none',
         display: 'flex',
@@ -474,15 +451,15 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
         }
       }}
     >
-      {/* Centered Arcade Window */}
+      {/* Centered Arcade Window with solid NeoPop borders and shadows */}
       <div 
         style={{ 
           position: 'relative', 
           width: 'min(100vw, 480px, calc(100dvh * 0.6))', 
           height: 'min(100dvh, 800px, calc(100vw / 0.6))', 
-          border: '4px solid #333', 
-          boxShadow: '0 0 40px rgba(0, 255, 102, 0.15)',
-          background: 'black',
+          border: '4px solid #ffffff', 
+          boxShadow: '12px 12px 0px #111111',
+          background: '#000000',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -509,20 +486,21 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
           </div>
         )}
 
+        {/* Start Overlay (Solid background overlay, thick card borders, no glass blur) */}
         {gameState === 'START' && (
           <div 
             style={{ 
               position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
               display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-              backdropFilter: 'blur(8px) brightness(0.5)',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
               zIndex: 10001
             }}
           >
             <div style={{ textAlign: 'center', width: '85%', maxWidth: '380px' }}>
-              <h1 className="np-title" style={{ fontSize: '3rem', marginBottom: '0.5rem', border: 'none', fontWeight: 900, letterSpacing: '-2px', textShadow: '0 0 15px rgba(0, 255, 102, 0.2)' }}>FLAPPY<br/><span style={{ color: 'var(--text-accent)' }}>BANT</span></h1>
+              <h1 className="np-title" style={{ fontSize: '3rem', marginBottom: '0.5rem', border: 'none', fontWeight: 900, letterSpacing: '-2px', textShadow: '4px 4px 0px #111111' }}>FLAPPY<br/><span style={{ color: 'var(--text-accent)' }}>BANT</span></h1>
               <p className="np-text-muted" style={{ marginBottom: '2.5rem', fontSize: '0.8rem', letterSpacing: '1.5px' }}>TAP OR PRESS SPACE TO JUMP</p>
               
-              <div className="np-section" style={{ borderStyle: 'solid', borderWidth: '3px', marginBottom: '2rem', background: '#000', borderColor: 'var(--border-color)', boxShadow: '8px 8px 0px rgba(0, 255, 102, 0.3)' }}>
+              <div className="np-section" style={{ borderStyle: 'solid', borderWidth: '3px', marginBottom: '2rem', background: '#000', borderColor: 'var(--border-color)', boxShadow: '8px 8px 0px #00ff66' }}>
                 <p style={{ margin: 0, fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Current Record</p>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '1.8rem', fontWeight: 900, color: 'white' }}>{highScore}</p>
               </div>
@@ -544,19 +522,19 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
           </div>
         )}
 
+        {/* Game Over Overlay */}
         {gameState === 'OVER' && (
           <div 
             style={{ 
               position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
               display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-              backdropFilter: 'blur(12px) brightness(0.4)',
-              transition: 'backdrop-filter 0.5s ease',
+              backgroundColor: 'rgba(0, 0, 0, 0.92)',
               zIndex: 10001
             }}
           >
             <div style={{ textAlign: 'center', width: '85%', maxWidth: '380px' }}>
-              <h1 className="np-title" style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-danger)', border: 'none', fontWeight: 900, textShadow: '0 0 10px rgba(255, 51, 102, 0.3)' }}>CRASHED!</h1>
-              <div className="np-section" style={{ borderStyle: 'solid', borderWidth: '3px', marginBottom: '2rem', background: '#000', borderColor: 'var(--border-color)', boxShadow: '8px 8px 0px rgba(255, 51, 102, 0.5)' }}>
+              <h1 className="np-title" style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-danger)', border: 'none', fontWeight: 900, textShadow: '4px 4px 0px #111111' }}>CRASHED!</h1>
+              <div className="np-section" style={{ borderStyle: 'solid', borderWidth: '3px', marginBottom: '2rem', background: '#000', borderColor: 'var(--border-color)', boxShadow: '8px 8px 0px var(--text-danger)' }}>
                 <p style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 700 }}>Final Score: <strong style={{ color: 'var(--text-accent)' }}>{score}</strong></p>
                 <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Best Protocol Run: {highScore}</p>
                 {score >= highScore && score > 0 && <p style={{ color: 'var(--text-accent)', fontSize: '0.8rem', marginTop: '0.75rem', fontWeight: 'bold' }}>NEW SYSTEM RECORD! 🏆</p>}
@@ -579,7 +557,7 @@ export default function FlappyBant({ onClose }: FlappyBantProps) {
         )}
 
         <div style={{ position: 'absolute', bottom: '2rem', width: '100%', textAlign: 'center', pointerEvents: 'none', opacity: 0.3 }}>
-          <p style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: 'white' }}>Protocol v1.9.14 / Easter Egg</p>
+          <p style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: 'white' }}>Protocol v1.9.15 / Easter Egg</p>
         </div>
       </div>
     </div>

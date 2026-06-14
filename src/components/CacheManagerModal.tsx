@@ -69,7 +69,7 @@ export default function CacheManagerModal({ isOpen, onClose }: CacheManagerModal
       display: 'flex', justifyContent: 'center', alignItems: 'center', 
       zIndex: 9999 
     }}>
-      <div className="np-section" style={{ borderColor: 'var(--text-accent)', borderStyle: 'solid', width: '90%', maxWidth: '400px', margin: '0' }}>
+      <div className="np-section np-pop-in" style={{ borderColor: 'var(--text-accent)', borderStyle: 'solid', width: '90%', maxWidth: '400px', margin: '0' }}>
         <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>Troubleshoot & Sync</h3>
         <p className="np-text-muted" style={{ marginBottom: '1.5rem', lineHeight: 1.4 }}>
           If bantLo is stuck offline, showing ghost expenses, or failing to sync — use these tools to reconcile your local data with the cloud.

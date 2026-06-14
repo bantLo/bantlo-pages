@@ -55,7 +55,7 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
   const receiverName = members.find(m => m.user_id === toUserId)?.profiles?.display_name || 'User';
 
   return (
-    <form onSubmit={handleSubmit} className="np-section" style={{ borderColor: 'var(--text-accent)' }}>
+    <form onSubmit={handleSubmit} className="np-section np-fade-in" style={{ borderColor: 'var(--text-accent)' }}>
       <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>
         {editId ? 'Edit Payment' : 'Record Payment'}
       </h3>

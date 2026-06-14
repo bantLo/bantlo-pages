@@ -1,5 +1,5 @@
 {
-  "version": "1.9.14",
-  "message": "Protocol 1.9.14: Overhauled FlappyBant physics with fixed timestep accumulator, resolved aspect ratio canvas stretching across devices, and integrated Web Audio synthesizer SFX with responsive touch/keyboard inputs.",
-  "published_at": "2026-06-14T14:56:00.000Z"
+  "version": "2.1.1",
+  "message": "Protocol v2.1.1: Optimized touch-swipe navigation to support native iOS edge-swipe back navigation by excluding the left-most edge (clientX < 45px) from custom tab switching.",
+  "published_at": "2026-06-14T15:08:00.000Z"
 }

@@ -232,7 +232,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
   };
 
   return (
-    <form onSubmit={handleSubmit} className="np-section" style={{ borderColor: editExpenseId ? 'var(--text-accent)' : 'var(--border-color)', borderStyle: editExpenseId ? 'solid' : 'dashed' }}>
+    <form onSubmit={handleSubmit} className="np-section np-fade-in" style={{ borderColor: editExpenseId ? 'var(--text-accent)' : 'var(--border-color)', borderStyle: editExpenseId ? 'solid' : 'dashed' }}>
       <h3 style={{ marginBottom: '1rem', textTransform: 'uppercase', color: editExpenseId ? 'var(--text-accent)' : 'inherit' }}>
         {editExpenseId ? '✎ Edit Record' : 'Add Expense'}
       </h3>

@@ -33,6 +33,9 @@ export default function GroupDetails() {
   const [editingSettlement, setEditingSettlement] = useState<any>(null);
   const [viewingExpense, setViewingExpense] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'management'>('expenses');
+  const [tabDirection, setTabDirection] = useState<'left' | 'right' | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
 
@@ -252,7 +255,70 @@ export default function GroupDetails() {
 
   const handleTabChange = (tab: 'expenses' | 'balances' | 'management') => {
     handleCancelRemove();
+    
+    const tabs: ('expenses' | 'balances' | 'management')[] = ['expenses', 'balances', 'management'];
+    const oldIndex = tabs.indexOf(activeTab);
+    const newIndex = tabs.indexOf(tab);
+
+    if (newIndex > oldIndex) {
+      setTabDirection('right');
+    } else if (newIndex < oldIndex) {
+      setTabDirection('left');
+    }
+
     setActiveTab(tab);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const tagName = target.tagName.toLowerCase();
+    if (
+      tagName === 'input' || 
+      tagName === 'textarea' || 
+      tagName === 'select' || 
+      target.closest('button') || 
+      target.closest('a')
+    ) {
+      return;
+    }
+
+    if (e.touches.length === 1) {
+      const startX = e.touches[0].clientX;
+      // If user swipes starting near the left edge (e.g. for iOS back gesture),
+      // we ignore custom tab switching to let the browser go back in history naturally.
+      if (startX < 45) {
+        return;
+      }
+      touchStartX.current = startX;
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const diffX = e.changedTouches[0].clientX - touchStartX.current;
+    const diffY = e.changedTouches[0].clientY - touchStartY.current;
+
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 60) {
+      const tabs: ('expenses' | 'balances' | 'management')[] = ['expenses', 'balances', 'management'];
+      const currentIndex = tabs.indexOf(activeTab);
+
+      if (diffX < 0) {
+        // Swipe left -> Next tab
+        if (currentIndex < tabs.length - 1) {
+          handleTabChange(tabs[currentIndex + 1]);
+        }
+      } else {
+        // Swipe right -> Previous tab
+        if (currentIndex > 0) {
+          handleTabChange(tabs[currentIndex - 1]);
+        }
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
   };
 
   const handleRemoveMember = (userId: string) => {
@@ -392,8 +458,8 @@ export default function GroupDetails() {
                     style={{ 
                       padding: '1.25rem', 
                       background: 'var(--bg-dark)', 
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      borderRadius: '8px',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '0px',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '1rem'
@@ -416,16 +482,16 @@ export default function GroupDetails() {
                           setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
                           setShowAddSettlement(true); 
                         }}
-                        className="np-btn"
                         style={{ 
                           background: 'var(--text-accent)', 
                           color: 'black', 
-                          border: 'none', 
-                          padding: '0.5rem 1rem', 
+                          border: '2px solid black', 
+                          padding: '0.4rem 0.8rem', 
                           fontWeight: 'bold', 
                           cursor: 'pointer', 
                           fontSize: '0.75rem',
-                          borderRadius: '4px',
+                          borderRadius: '0px',
+                          boxShadow: '2px 2px 0px black',
                           textTransform: 'uppercase'
                         }}
                       >
@@ -488,10 +554,12 @@ export default function GroupDetails() {
     }
   }
 
+  const animClass = tabDirection === 'right' ? 'np-tab-slide-right' : (tabDirection === 'left' ? 'np-tab-slide-left' : 'np-fade-in');
+
   return (
-    <div className="np-container">
+    <div className="np-container np-fade-in">
       {toastMessage && (
-        <div style={{
+        <div className="np-toast-in" style={{
           position: 'fixed',
           bottom: '20px',
           left: '50%',
@@ -577,8 +645,13 @@ export default function GroupDetails() {
         </button>
       </div>
 
-      {activeTab === 'expenses' && (
-        <div className="np-expenses-layout">
+      <div 
+        onTouchStart={handleTouchStart} 
+        onTouchEnd={handleTouchEnd} 
+        style={{ width: '100%', overflowX: 'hidden' }}
+      >
+        {activeTab === 'expenses' && (
+          <div className={`np-expenses-layout ${animClass}`}>
           <div className="np-expenses-main">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
               {!showAddExpense && (
@@ -710,8 +783,8 @@ export default function GroupDetails() {
         </div>
       )}
 
-      {activeTab === 'balances' && (
-        <>
+        {activeTab === 'balances' && (
+          <div className={animClass}>
           <div className="np-grid-desktop">
             <div className="np-section" style={{ borderStyle: 'dashed' }}>
               <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Member Balances</h2>
@@ -770,8 +843,8 @@ export default function GroupDetails() {
                         style={{ 
                           padding: '1.25rem', 
                           background: 'var(--bg-dark)', 
-                          border: '1px solid rgba(255,255,255,0.05)',
-                          borderRadius: '8px',
+                          border: '2px solid var(--border-color)',
+                          borderRadius: '0px',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '1rem'
@@ -794,16 +867,16 @@ export default function GroupDetails() {
                               setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
                               setShowAddSettlement(true); 
                             }}
-                            className="np-btn"
                             style={{ 
                               background: 'var(--text-accent)', 
                               color: 'black', 
-                              border: 'none', 
-                              padding: '0.5rem 1rem', 
+                              border: '2px solid black', 
+                              padding: '0.4rem 0.8rem', 
                               fontWeight: 'bold', 
                               cursor: 'pointer', 
                               fontSize: '0.75rem',
-                              borderRadius: '4px',
+                              borderRadius: '0px',
+                              boxShadow: '2px 2px 0px black',
                               textTransform: 'uppercase'
                             }}
                           >
@@ -830,12 +903,12 @@ export default function GroupDetails() {
                 onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
               />
             </div>
-          )}
-        </>
-      )}
+            )}
+          </div>
+        )}
 
-      {activeTab === 'management' && (
-        <div className="np-grid-desktop">
+        {activeTab === 'management' && (
+          <div className={`np-grid-desktop ${animClass}`}>
           {/* Column 1: Administrative Actions */}
           <div className="np-section" style={{ borderStyle: 'dashed', margin: 0 }}>
             <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>Administrative Actions</h2>
@@ -959,6 +1032,7 @@ export default function GroupDetails() {
           </div>
         </div>
       )}
+      </div>
 
       {/* Transaction Detail Overlay */}
       {viewingExpense && (
@@ -967,7 +1041,6 @@ export default function GroupDetails() {
             position: 'fixed', 
             top: 0, left: 0, width: '100%', height: '100%', 
             background: 'rgba(0,0,0,0.85)', 
-            backdropFilter: 'blur(4px)',
             display: 'flex', 
             justifyContent: 'center', 
             alignItems: 'center', 
@@ -977,7 +1050,7 @@ export default function GroupDetails() {
           onClick={() => setViewingExpense(null)}
         >
           <div 
-            className="np-section" 
+            className="np-section np-pop-in" 
             style={{ 
               maxWidth: '450px', 
               width: '100%', 

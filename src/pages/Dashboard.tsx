@@ -232,9 +232,9 @@ export default function Dashboard() {
   const settledFriendGroups = settledGroups.filter(g => g.is_friend_group);
 
   return (
-    <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="np-container np-fade-in" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {toastMessage && (
-        <div style={{
+        <div className="np-toast-in" style={{
           position: 'fixed',
           bottom: '20px',
           left: '50%',
@@ -271,7 +271,6 @@ export default function Dashboard() {
                 height: '6px', 
                 borderRadius: '50%', 
                 background: 'var(--text-accent)',
-                boxShadow: '0 0 8px var(--text-accent)',
                 animation: 'pulse 1s infinite alternate'
               }} 
               title="Syncing ledger with cloud..."
@@ -454,8 +453,8 @@ export default function Dashboard() {
                       <Link 
                         key={g.id} 
                         to={`/groups/${g.id}`} 
-                        className="np-section" 
-                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', borderColor: 'var(--text-accent)', borderStyle: 'dashed' }}
+                        className="np-section np-card-interactive" 
+                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', borderColor: 'var(--text-accent)', borderStyle: 'dashed' }}
                       >
                         <div className="np-flex-between">
                           <div>
@@ -490,8 +489,8 @@ export default function Dashboard() {
                       <Link 
                         key={g.id} 
                         to={`/groups/${g.id}`} 
-                        className="np-section" 
-                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)' }}
+                        className="np-section np-card-interactive" 
+                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem' }}
                       >
                         <div className="np-flex-between">
                           <div>
@@ -546,7 +545,7 @@ export default function Dashboard() {
               </div>
 
               {settledExpanded && (
-                <div className="np-grid-desktop" style={{ gridTemplateColumns: settledFriendGroups.length > 0 ? '1fr 1.5fr' : '1fr', animation: 'fadeIn 0.2s ease-out', marginTop: '1rem' }}>
+                <div className="np-grid-desktop np-slide-down" style={{ gridTemplateColumns: settledFriendGroups.length > 0 ? '1fr 1.5fr' : '1fr', marginTop: '1rem' }}>
                   {settledFriendGroups.length > 0 && (
                     <div>
                       <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (Settled)</p>
@@ -555,8 +554,8 @@ export default function Dashboard() {
                           <Link 
                             key={g.id} 
                             to={`/groups/${g.id}`} 
-                            className="np-section" 
-                            style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', borderColor: 'var(--border-color)', borderStyle: 'dashed', opacity: 0.7 }}
+                            className="np-section np-card-interactive" 
+                            style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', borderColor: 'var(--border-color)', borderStyle: 'dashed', opacity: 0.7 }}
                           >
                             <div className="np-flex-between">
                               <div>
@@ -585,8 +584,8 @@ export default function Dashboard() {
                           <Link 
                             key={g.id} 
                             to={`/groups/${g.id}`} 
-                            className="np-section" 
-                            style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', opacity: 0.7 }}
+                            className="np-section np-card-interactive" 
+                            style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', opacity: 0.7 }}
                           >
                             <div className="np-flex-between">
                               <div>
@@ -614,7 +613,7 @@ export default function Dashboard() {
           marginTop: 'auto', 
           padding: '1.25rem 1.5rem 0.25rem 1.5rem', 
           marginBottom: '-0.5rem',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          borderTop: 'var(--border-width) solid var(--border-color)',
           textAlign: 'center',
           opacity: isTipVisible ? 1 : 0,
           visibility: isTipVisible ? 'visible' : 'hidden',

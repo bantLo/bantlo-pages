@@ -32,7 +32,6 @@ export default function UpdatePrompt() {
         position: 'fixed', 
         top: 0, left: 0, width: '100%', height: '100%', 
         background: 'rgba(0,0,0,0.85)', 
-        backdropFilter: 'blur(8px)',
         zIndex: 9999,
         display: 'flex', 
         alignItems: 'center', 
@@ -41,14 +40,14 @@ export default function UpdatePrompt() {
       }}
     >
       <div 
-        className="np-section" 
+        className="np-section np-pop-in" 
         style={{ 
           maxWidth: '400px', 
           width: '100%', 
           borderColor: 'var(--text-accent)',
           background: 'var(--bg-dark)',
           textAlign: 'center',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(0,183,114,0.2)'
+          boxShadow: '8px 8px 0px var(--text-accent)'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
@@ -65,11 +64,11 @@ export default function UpdatePrompt() {
             style={{ 
               background: 'rgba(255,255,255,0.03)', 
               padding: '1rem', 
-              borderRadius: '8px', 
+              borderRadius: '0px', 
               marginBottom: '2rem',
               fontSize: '0.85rem',
               lineHeight: '1.5',
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: '2px solid var(--border-color)',
               textAlign: 'left'
             }}
           >
