@@ -1,5 +1,5 @@
 {
-  "version": "2.1.1",
-  "message": "Protocol v2.1.1: Optimized touch-swipe navigation to support native iOS edge-swipe back navigation by excluding the left-most edge (clientX < 45px) from custom tab switching.",
-  "published_at": "2026-06-14T15:08:00.000Z"
+  "version": "2.1.2",
+  "message": "Protocol v2.1.2: Fixed visual hover animation clipping in the settled groups container by dynamically toggling overflow-x boundaries on slide animation completion.",
+  "published_at": "2026-06-14T15:11:00.000Z"
 }

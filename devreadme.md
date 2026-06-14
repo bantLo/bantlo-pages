@@ -45,6 +45,7 @@ The application source code.
   - *Shares*: Calculates fractional proportions based on variable assigned integer weights.
 - **`NeoButton.tsx`**: A global programmatic wrapper scaling all clickable interactions. It forcibly locks CSS animations down for 150ms before allowing routing or submissions, guaranteeing satisfying tactical feedback.
 - **`CacheManagerModal.tsx`**: Granular modal allowing independent execution against Service Worker Shell Caches versus IndexedDB Stores, serving as a dedicated failsafe.
+- **`FlappyBant.tsx`**: A NeoPop Brutalist styled arcade game easter egg. Employs a fixed physics timestep accumulator loop (`16.6667ms` steps) to standardize gravity and jump speed across 60Hz and 120Hz displays, responsive tap delay bypasses, Web Audio API synthesis for asset-free 8-bit sound effects, and native iOS edge-swipe back navigation exclusion.
 
 #### `src/pages/`
 - **`Landing.tsx`**: Public marketing page. Responsive CSS grids provide distinct views for Desktop (Dashboard CTA) and Mobile (`beforeinstallprompt` PWA installation trigger).
@@ -79,6 +80,7 @@ bantLo is functionally designed to survive a total degradation of cellular netwo
 
 ## 🛠️ 5. Rules for Contributors
 
-1. **Aesthetic Consistency**: Do not break the Pitch-Black NeoPop theme. Heavy shadows, curved `border-radius: 20px`, and soft pastel colors are strictly prohibited. Stick to brutalist sharp lines, `var(--bg-dark)`, and dashed component borders.
+1. **Aesthetic Consistency**: Do not break the Pitch-Black NeoPop theme. Heavy shadows, curved `border-radius: 20px`, and soft pastel colors are strictly prohibited. Stick to brutalist sharp lines, `var(--bg-dark)`, and dashed component borders. Utilize only the defined NeoPop Brutalist CSS animations (`.np-fade-in`, `.np-pop-in`, `.np-slide-down`, `.np-card-interactive`, and `.np-toast-in`) to maintain transitions and micro-interactions.
 2. **No Backend Middleware**: Never attempt to build or demand an Express.js/Node instance to "handle a calculation securely". Do the math on the Client, and enforce the data validation/security universally using Supabase Database Triggers and RLS policies.
 3. **Graceful Degradation**: Always anticipate that `supabase.from()` calls will fail. Wrap everything in Try/Catch structures and guarantee the UI presents fallback offline data arrays to prevent React crashes.
+4. **Touch & Swipe Gestures**: When introducing mobile gestures, always check and bypass interactive input fields (`input`, `textarea`, `select`, buttons, links) to preserve user typing control, and exclude left-edge start boundaries (`clientX < 45px`) to guarantee native iOS swipe-back navigation is not intercepted.
