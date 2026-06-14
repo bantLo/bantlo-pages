@@ -141,6 +141,8 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
+    const trimmedDescription = description.trim();
+    if (!trimmedDescription) return alert('Description is required');
     if (!amount || amount <= 0) return alert('Invalid amount');
     if (splitType === 1 && exactRemaining !== 0) return alert('Exact splits must sum strictly to the total amount.');
     if (splitType === 2 && Object.values(shares).reduce((a, b) => a + (Number(b) || 0), 0) === 0) {
@@ -170,16 +172,17 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       if (editExpenseId) {
         const updated = await updateFullExpense(
           editExpenseId,
-          { description, amount: Number(amount), split_type: splitType },
+          { description: trimmedDescription, amount: Number(amount), split_type: splitType },
           paymentsToInsert,
           splitsToInsert
         );
+        setDescription(trimmedDescription);
         onComplete(updated);
       } else {
         const { data: exp, error: e1 } = await supabase.from('expenses').insert([{
           group_id: groupId,
           amount: Number(amount),
-          description,
+          description: trimmedDescription,
           split_type: splitType
         }]).select().single();
         if (e1) throw e1;
@@ -235,14 +238,24 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       </h3>
       
       <div style={{ marginBottom: '1rem' }}>
-        <input 
-          type="text" 
+        <textarea 
+          rows={2}
           placeholder="Description (e.g. Dinner)" 
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
           maxLength={100}
-          style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', fontFamily: 'inherit' }}
+          style={{ 
+            width: '100%', 
+            padding: '0.75rem', 
+            background: 'var(--bg-dark)', 
+            border: '2px solid var(--border-color)', 
+            color: 'white', 
+            fontSize: '1.2rem', 
+            fontWeight: 'bold', 
+            fontFamily: 'inherit',
+            resize: 'none'
+          }}
         />
       </div>
       

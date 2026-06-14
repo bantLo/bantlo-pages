@@ -159,3 +159,15 @@ body {
     align-items: start;
   }
 }
+
+/* Hide sorting options on mobile, show only on desktop */
+.np-desktop-sorting-toolbar {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .np-desktop-sorting-toolbar {
+    display: inline-flex !important;
+  }
+}
+

@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
     (localStorage.getItem('bantlo_sort_order') as any) || 'desc'
   );
+  const [settledExpanded, setSettledExpanded] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -221,8 +222,14 @@ export default function Dashboard() {
   };
 
   const sortedGroups = getSortedGroups(groups);
-  const normalGroups = sortedGroups.filter(g => !g.is_friend_group);
-  const friendGroups = sortedGroups.filter(g => g.is_friend_group);
+  const activeGroups = sortedGroups.filter(g => Math.abs(g.standing || 0) > 0.01);
+  const settledGroups = sortedGroups.filter(g => Math.abs(g.standing || 0) <= 0.01);
+
+  const activeNormalGroups = activeGroups.filter(g => !g.is_friend_group);
+  const activeFriendGroups = activeGroups.filter(g => g.is_friend_group);
+
+  const settledNormalGroups = settledGroups.filter(g => !g.is_friend_group);
+  const settledFriendGroups = settledGroups.filter(g => g.is_friend_group);
 
   return (
     <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -290,17 +297,20 @@ export default function Dashboard() {
       </div>
 
       {/* Group List Sorting Toolbar */}
-      <div style={{ 
-        display: 'inline-flex', 
-        gap: '0.5rem', 
-        marginBottom: '1.5rem', 
-        fontSize: '0.75rem', 
-        textTransform: 'uppercase',
-        border: '2px solid var(--border-color)',
-        padding: '0.4rem 0.8rem',
-        alignItems: 'center',
-        background: 'var(--bg-surface)'
-      }}>
+      <div 
+        className="np-desktop-sorting-toolbar"
+        style={{ 
+          display: 'inline-flex', 
+          gap: '0.5rem', 
+          marginBottom: '1.5rem', 
+          fontSize: '0.75rem', 
+          textTransform: 'uppercase',
+          border: '2px solid var(--border-color)',
+          padding: '0.4rem 0.8rem',
+          alignItems: 'center',
+          background: 'var(--bg-surface)'
+        }}
+      >
         <span className="np-text-muted" style={{ fontWeight: 'bold', marginRight: '0.25rem' }}>Sort:</span>
         
         <button
@@ -427,77 +437,176 @@ export default function Dashboard() {
           <p className="np-text-muted">Create a Group or Add a friend to start splitting bills entirely offline natively!</p>
         </div>
       ) : (
-        <div className="np-grid-desktop" style={{ gridTemplateColumns: friendGroups.length > 0 ? '1fr 1.5fr' : '1fr' }}>
-          
-          {friendGroups.length > 0 && (
-            <div>
-              <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (1-on-1)</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {friendGroups.map(g => (
-                  <Link 
-                    key={g.id} 
-                    to={`/groups/${g.id}`} 
-                    className="np-section" 
-                    style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', borderColor: 'var(--text-accent)', borderStyle: 'dashed' }}
-                  >
-                    <div className="np-flex-between">
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
-                        <div style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}>
-                          {Number(g.standing || 0) > 0.01 ? (
-                            <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>Owed: {g.currency} {Number(g.standing).toFixed(2)}</span>
-                          ) : Number(g.standing || 0) < -0.01 ? (
-                            <span style={{ color: 'var(--text-danger)', fontWeight: 'bold' }}>You owe: {g.currency} {Math.abs(Number(g.standing)).toFixed(2)}</span>
-                          ) : (
-                            <span className="np-text-muted">Settled ✔</span>
-                          )}
+        <>
+          {activeGroups.length === 0 ? (
+            <div className="np-section" style={{ textAlign: 'center', padding: '3rem 1rem', borderStyle: 'dashed' }}>
+              <p style={{ marginBottom: '1rem', fontWeight: 'bold' }}>All Clean! ✨</p>
+              <p className="np-text-muted">No active balances. Create a new Group, add a Friend, or view settled groups below.</p>
+            </div>
+          ) : (
+            <div className="np-grid-desktop" style={{ gridTemplateColumns: activeFriendGroups.length > 0 ? '1fr 1.5fr' : '1fr' }}>
+              
+              {activeFriendGroups.length > 0 && (
+                <div>
+                  <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (1-on-1)</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {activeFriendGroups.map(g => (
+                      <Link 
+                        key={g.id} 
+                        to={`/groups/${g.id}`} 
+                        className="np-section" 
+                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', borderColor: 'var(--text-accent)', borderStyle: 'dashed' }}
+                      >
+                        <div className="np-flex-between">
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
+                            <div style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}>
+                              {Number(g.standing || 0) > 0.01 ? (
+                                <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>Owed: {g.currency} {Number(g.standing).toFixed(2)}</span>
+                              ) : Number(g.standing || 0) < -0.01 ? (
+                                <span style={{ color: 'var(--text-danger)', fontWeight: 'bold' }}>You owe: {g.currency} {Math.abs(Number(g.standing)).toFixed(2)}</span>
+                              ) : (
+                                <span className="np-text-muted">Settled ✔</span>
+                              )}
+                            </div>
+                          </div>
+                          <span style={{ color: 'var(--text-accent)' }}>›</span>
                         </div>
-                      </div>
-                      <span style={{ color: 'var(--text-accent)' }}>›</span>
-                    </div>
-                  </Link>
-                ))}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Ledger Groups</p>
+                {activeNormalGroups.length === 0 ? (
+                  <div className="np-section" style={{ borderStyle: 'dotted', opacity: 0.5 }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>No active group ledgers. Click "+ Group" to start one!</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {activeNormalGroups.map(g => (
+                      <Link 
+                        key={g.id} 
+                        to={`/groups/${g.id}`} 
+                        className="np-section" 
+                        style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)' }}
+                      >
+                        <div className="np-flex-between">
+                          <div>
+                            <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
+                            <div style={{ marginTop: '0.4rem', fontSize: '0.8rem' }}>
+                              {Number(g.standing || 0) > 0.01 ? (
+                                <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>Owed: {g.currency} {Number(g.standing).toFixed(2)}</span>
+                              ) : Number(g.standing || 0) < -0.01 ? (
+                                <span style={{ color: 'var(--text-danger)', fontWeight: 'bold' }}>You owe: {g.currency} {Math.abs(Number(g.standing)).toFixed(2)}</span>
+                              ) : (
+                                <span className="np-text-muted">Settled ✔</span>
+                              )}
+                            </div>
+                          </div>
+                          <span style={{ color: 'var(--text-primary)' }}>›</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
+
             </div>
           )}
 
-          <div>
-            <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Ledger Groups</p>
-            {normalGroups.length === 0 ? (
-              <div className="np-section" style={{ borderStyle: 'dotted', opacity: 0.5 }}>
-                <p style={{ margin: 0, fontSize: '0.85rem' }}>No group ledgers. Click "+ Group" to start one!</p>
+          {/* Collapsible Settled Groups Section */}
+          {settledGroups.length > 0 && (
+            <div style={{ marginTop: '2.5rem' }}>
+              <div 
+                onClick={() => setSettledExpanded(!settledExpanded)}
+                className="np-section"
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  cursor: 'pointer',
+                  marginBottom: '1rem',
+                  borderColor: 'var(--border-color)',
+                  borderStyle: 'dashed',
+                  padding: '1rem',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--text-accent)'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+              >
+                <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '0.9rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  Settled Groups ({settledGroups.length})
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', transition: 'transform 0.15s ease-in-out', transform: settledExpanded ? 'rotate(180deg)' : 'none' }}>
+                  ▼
+                </span>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {normalGroups.map(g => (
-                  <Link 
-                    key={g.id} 
-                    to={`/groups/${g.id}`} 
-                    className="np-section" 
-                    style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)' }}
-                  >
-                    <div className="np-flex-between">
-                      <div>
-                        <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
-                        <div style={{ marginTop: '0.4rem', fontSize: '0.8rem' }}>
-                          {Number(g.standing || 0) > 0.01 ? (
-                            <span style={{ color: 'var(--text-accent)', fontWeight: 'bold' }}>Owed: {g.currency} {Number(g.standing).toFixed(2)}</span>
-                          ) : Number(g.standing || 0) < -0.01 ? (
-                            <span style={{ color: 'var(--text-danger)', fontWeight: 'bold' }}>You owe: {g.currency} {Math.abs(Number(g.standing)).toFixed(2)}</span>
-                          ) : (
-                            <span className="np-text-muted">Settled ✔</span>
-                          )}
-                        </div>
-                      </div>
-                      <span style={{ color: 'var(--text-primary)' }}>›</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
 
-        </div>
+              {settledExpanded && (
+                <div className="np-grid-desktop" style={{ gridTemplateColumns: settledFriendGroups.length > 0 ? '1fr 1.5fr' : '1fr', animation: 'fadeIn 0.2s ease-out', marginTop: '1rem' }}>
+                  {settledFriendGroups.length > 0 && (
+                    <div>
+                      <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Friends (Settled)</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {settledFriendGroups.map(g => (
+                          <Link 
+                            key={g.id} 
+                            to={`/groups/${g.id}`} 
+                            className="np-section" 
+                            style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', borderColor: 'var(--border-color)', borderStyle: 'dashed', opacity: 0.7 }}
+                          >
+                            <div className="np-flex-between">
+                              <div>
+                                <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
+                                <div style={{ marginTop: '0.4rem', fontSize: '0.75rem' }}>
+                                  <span className="np-text-muted">Settled ✔</span>
+                                </div>
+                              </div>
+                              <span style={{ color: 'var(--text-accent)' }}>›</span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="np-text-muted" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '1px' }}>Ledger Groups (Settled)</p>
+                    {settledNormalGroups.length === 0 ? (
+                      <div className="np-section" style={{ borderStyle: 'dotted', opacity: 0.5 }}>
+                        <p style={{ margin: 0, fontSize: '0.85rem' }}>No settled group ledgers.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {settledNormalGroups.map(g => (
+                          <Link 
+                            key={g.id} 
+                            to={`/groups/${g.id}`} 
+                            className="np-section" 
+                            style={{ cursor: 'pointer', display: 'block', textDecoration: 'none', margin: 0, padding: '1rem', transition: 'var(--transition-fast)', opacity: 0.7 }}
+                          >
+                            <div className="np-flex-between">
+                              <div>
+                                <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{g.name}</h3>
+                                <div style={{ marginTop: '0.4rem', fontSize: '0.8rem' }}>
+                                  <span className="np-text-muted">Settled ✔</span>
+                                </div>
+                              </div>
+                              <span style={{ color: 'var(--text-primary)' }}>›</span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
       
       <div 

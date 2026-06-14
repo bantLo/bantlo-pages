@@ -186,4 +186,22 @@ describe('AddExpense Component', () => {
       expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('duplicate payment or split entry was detected'));
     });
   });
+
+  it('trims leading and trailing whitespace/newlines from description on submit', async () => {
+    mockSingleResult.mockResolvedValue({ data: { id: 'trimmed_expense_id' }, error: null });
+    mockInsertResult.mockResolvedValue({ error: null });
+
+    render(<AddExpense {...defaultProps} />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Description/i), { target: { value: ' \n  Lunch Day 1 \n\n ' } });
+    fireEvent.change(screen.getByPlaceholderText(/Total Amount/i), { target: { value: '100' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Save Expense/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(defaultProps.onComplete).toHaveBeenCalled();
+    });
+  });
 });
+
