@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
   const [newFriendEmail, setNewFriendEmail] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [addingFriend, setAddingFriend] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -142,8 +144,10 @@ export default function Dashboard() {
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (creatingGroup) return;
     if (!newGroupName.trim()) return;
     
+    setCreatingGroup(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -156,13 +160,17 @@ export default function Dashboard() {
     } catch (error: any) {
       console.error(error);
       setToastMessage({ text: 'Error creating group: ' + (error.message || 'Check database connection'), type: 'error' });
+    } finally {
+      setCreatingGroup(false);
     }
   };
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (addingFriend) return;
     if (!newFriendEmail.trim()) return;
     
+    setAddingFriend(true);
     try {
       await addFriendByEmail(newFriendEmail.trim());
       setNewFriendEmail('');
@@ -172,6 +180,8 @@ export default function Dashboard() {
     } catch (error: any) {
       console.error(error);
       setToastMessage({ text: error.message || 'Error adding friend.', type: 'error' });
+    } finally {
+      setAddingFriend(false);
     }
   };
 
@@ -284,8 +294,10 @@ export default function Dashboard() {
             </select>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <NeoButton type="submit" variant="primary" style={{ flex: 1 }}>Create</NeoButton>
-            <NeoButton type="button" onClick={() => setShowCreate(false)}>Cancel</NeoButton>
+            <NeoButton type="submit" variant="primary" style={{ flex: 1 }} disabled={creatingGroup}>
+              {creatingGroup ? 'Creating...' : 'Create'}
+            </NeoButton>
+            <NeoButton type="button" onClick={() => setShowCreate(false)} disabled={creatingGroup}>Cancel</NeoButton>
           </div>
         </form>
       )}
@@ -312,8 +324,10 @@ export default function Dashboard() {
             }}
           />
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <NeoButton type="submit" variant="primary" style={{ flex: 1, borderColor: 'var(--text-accent)' }}>Add</NeoButton>
-            <NeoButton type="button" onClick={() => setShowAddFriend(false)}>Cancel</NeoButton>
+            <NeoButton type="submit" variant="primary" style={{ flex: 1, borderColor: 'var(--text-accent)' }} disabled={addingFriend}>
+              {addingFriend ? 'Adding...' : 'Add'}
+            </NeoButton>
+            <NeoButton type="button" onClick={() => setShowAddFriend(false)} disabled={addingFriend}>Cancel</NeoButton>
           </div>
         </form>
       )}

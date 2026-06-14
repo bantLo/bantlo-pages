@@ -285,38 +285,54 @@ export async function fetchExpenseCount(groupId: string) {
 }
 
 export async function createSettlement(groupId: string, fromId: string, toId: string, amount: number) {
-  // 1. Create the primary expense record
-  const { data: expense, error: eError } = await supabase
-    .from('expenses')
-    .insert([{
-      group_id: groupId,
-      amount: amount,
-      description: 'Settle Payment',
-      split_type: 1, // Exact
-      is_settlement: true
-    }])
-    .select('id, group_id, description, amount, created_at, is_settlement')
-    .single();
-  
-  if (eError) throw eError;
+  let createdExpenseId: string | null = null;
+  try {
+    // 1. Create the primary expense record
+    const { data: expense, error: eError } = await supabase
+      .from('expenses')
+      .insert([{
+        group_id: groupId,
+        amount: amount,
+        description: 'Settle Payment',
+        split_type: 1, // Exact
+        is_settlement: true
+      }])
+      .select('id, group_id, description, amount, created_at, is_settlement')
+      .single();
+    
+    if (eError) throw eError;
+    createdExpenseId = expense.id;
 
-  // 2. Insert Funding Record (Sender pays) and Debt Record (Receiver owes)
-  // This causes the mathematical net effect to perfectly zero out the debt.
-  const { error: pError } = await supabase.from('expense_payments').insert([{
-    expense_id: expense.id,
-    user_id: fromId,
-    amount_paid: amount
-  }]);
-  if (pError) throw pError;
+    // 2. Insert Funding Record (Sender pays) and Debt Record (Receiver owes)
+    // This causes the mathematical net effect to perfectly zero out the debt.
+    const { error: pError } = await supabase.from('expense_payments').insert([{
+      expense_id: expense.id,
+      user_id: fromId,
+      amount_paid: amount
+    }]);
+    if (pError) throw pError;
 
-  const { error: sError } = await supabase.from('expense_splits').insert([{
-    expense_id: expense.id,
-    user_id: toId,
-    amount_owed: amount
-  }]);
-  if (sError) throw sError;
+    const { error: sError } = await supabase.from('expense_splits').insert([{
+      expense_id: expense.id,
+      user_id: toId,
+      amount_owed: amount
+    }]);
+    if (sError) throw sError;
 
-  return expense;
+    return expense;
+  } catch (error) {
+    if (createdExpenseId) {
+      try {
+        await supabase
+          .from('expenses')
+          .delete()
+          .eq('id', createdExpenseId);
+      } catch (err) {
+        console.error('Failed to clean up dangling settlement expense:', err);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function fetchRecentSettlements(groupId: string) {

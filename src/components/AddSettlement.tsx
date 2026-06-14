@@ -27,6 +27,7 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!amount || amount <= 0) return alert('Invalid amount');
     if (!fromUserId || !toUserId || fromUserId === toUserId) return alert('Invalid users selected!');
 
@@ -40,7 +41,11 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
       onComplete();
     } catch (err: any) {
       console.error(err);
-      alert('Failed to save payment: ' + (err.message || 'Check database connection'));
+      if (err.code === '23505' || err.message?.includes('unique_constraint') || err.message?.includes('unique constraint')) {
+        alert('This payment could not be recorded because a duplicate payment or split entry was detected for this transaction.');
+      } else {
+        alert('Failed to save payment: ' + (err.message || 'Check database connection'));
+      }
     } finally {
       setLoading(false);
     }

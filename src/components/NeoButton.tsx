@@ -12,7 +12,7 @@ export default function NeoButton({ to, onClick, variant = 'default', className 
   const [animating, setAnimating] = useState(false);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (animating) {
+    if (props.disabled || animating) {
       e.preventDefault();
       return;
     }

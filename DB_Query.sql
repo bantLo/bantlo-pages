@@ -441,3 +441,24 @@ DROP TRIGGER IF EXISTS trg_reverse_balance_before_delete ON expenses;
 CREATE TRIGGER trg_reverse_balance_before_delete
 BEFORE DELETE ON expenses
 FOR EACH ROW EXECUTE FUNCTION reverse_balance_before_expense_delete();
+
+
+-- ==========================================
+-- Duplicate Protection Constraints
+-- ==========================================
+
+-- Ensure a user can only have one payment record per expense
+ALTER TABLE expense_payments
+DROP CONSTRAINT IF EXISTS expense_payment_unique;
+
+ALTER TABLE expense_payments
+ADD CONSTRAINT expense_payment_unique
+UNIQUE (expense_id, user_id);
+
+-- Ensure a user can only have one split record per expense
+ALTER TABLE expense_splits
+DROP CONSTRAINT IF EXISTS expense_split_unique;
+
+ALTER TABLE expense_splits
+ADD CONSTRAINT expense_split_unique
+UNIQUE (expense_id, user_id);

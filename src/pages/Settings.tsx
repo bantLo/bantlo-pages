@@ -10,7 +10,7 @@ import FlappyBant from '../components/FlappyBant';
 
 export default function Settings() {
   const [tapCount, setTapCount] = useState(0);
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [showCacheModal, setShowCacheModal] = useState(false);
   const [showEasterEgg, setShowEasterEgg] = useState(false);

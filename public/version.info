@@ -1,5 +1,5 @@
 {
-  "version": "1.9.5",
-  "message": "Protocol 1.9.5: Extended capacity. Increased expense description limits to 100 characters for more detailed record keeping. Precision remains the core priority.",
-  "published_at": "2026-05-03T10:13:00.000Z"
+  "version": "1.9.6",
+  "message": "Protocol 1.9.6: Enhanced database reliability with the new Supabase sync architecture. Local IndexedDB storage is now fully synchronized with PostgreSQL for persistent data integrity.",
+  "published_at": "2026-06-15T01:10:00.000Z"
 }

@@ -140,6 +140,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!amount || amount <= 0) return alert('Invalid amount');
     if (splitType === 1 && exactRemaining !== 0) return alert('Exact splits must sum strictly to the total amount.');
     if (splitType === 2 && Object.values(shares).reduce((a, b) => a + (Number(b) || 0), 0) === 0) {
@@ -149,6 +150,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
     if (payerType === 'single' && !singlePayerId) return alert('Please assign a primary payer.');
 
     setLoading(true);
+    let createdExpenseId: string | null = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not auth');
@@ -181,6 +183,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
           split_type: splitType
         }]).select().single();
         if (e1) throw e1;
+        createdExpenseId = exp.id;
 
         const { error: eP } = await supabase.from('expense_payments').insert(paymentsToInsert.map(p => ({ ...p, expense_id: exp.id })));
         if (eP) throw eP;
@@ -208,7 +211,18 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       }
     } catch (err: any) {
       console.error(err);
-      alert('Failed to save expense');
+      if (createdExpenseId) {
+        try {
+          await supabase.from('expenses').delete().eq('id', createdExpenseId);
+        } catch (cleanupErr) {
+          console.error('Failed to clean up dangling expense after sub-insert failure:', cleanupErr);
+        }
+      }
+      if (err.code === '23505' || err.message?.includes('unique_constraint') || err.message?.includes('unique constraint')) {
+        alert('This transaction could not be saved because a duplicate payment or split entry was detected for a user.');
+      } else {
+        alert('Failed to save expense: ' + (err.message || 'Check database connection'));
+      }
     } finally {
       setLoading(false);
     }

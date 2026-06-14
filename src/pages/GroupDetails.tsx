@@ -189,6 +189,7 @@ export default function GroupDetails() {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (memberLoading) return;
     if (!id || !newMemberEmail) return;
     setMemberLoading(true);
     try {

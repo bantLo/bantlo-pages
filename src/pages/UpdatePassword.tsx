@@ -31,6 +31,7 @@ export default function UpdatePassword() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (password.length < 8) {
       setMessage({ text: 'Password must be at least 8 characters long.', type: 'error' });
       return;
