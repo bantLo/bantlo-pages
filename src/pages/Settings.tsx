@@ -19,6 +19,21 @@ export default function Settings() {
 
   const [userName, setUserName] = useState('');
 
+  const [sortBy, setSortBy] = useState<'updated' | 'alpha'>(
+    (localStorage.getItem('bantlo_sort_by') as any) || 'updated'
+  );
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    (localStorage.getItem('bantlo_sort_order') as any) || 'desc'
+  );
+
+  const handleSortCombinedChange = (value: string) => {
+    const [by, order] = value.split('_') as [ 'updated' | 'alpha', 'asc' | 'desc' ];
+    setSortBy(by);
+    setSortOrder(order);
+    localStorage.setItem('bantlo_sort_by', by);
+    localStorage.setItem('bantlo_sort_order', order);
+  };
+
   useEffect(() => {
     // Fetch User Name
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -84,6 +99,31 @@ export default function Settings() {
         <p className="np-text-muted" style={{ fontSize: '0.7rem', marginTop: '0.75rem' }}>
           Update your display identity, security credentials, or manage deep account deletion.
         </p>
+      </div>
+
+      <div className="np-section" style={{ borderStyle: 'solid', borderColor: 'var(--border-color)', marginBottom: '1.5rem' }}>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase' }}>Dashboard Preferences</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Default Group Sorting</label>
+          <select 
+            value={`${sortBy}_${sortOrder}`}
+            onChange={(e) => handleSortCombinedChange(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '0.75rem', 
+              background: 'var(--bg-dark)', 
+              border: '2px solid var(--border-color)', 
+              color: 'white', 
+              fontFamily: 'inherit',
+              outline: 'none'
+            }}
+          >
+            <option value="updated_desc">Recently Updated (Newest First) ▼</option>
+            <option value="updated_asc">Recently Updated (Oldest First) ▲</option>
+            <option value="alpha_asc">Alphabetical (A-Z) ▲</option>
+            <option value="alpha_desc">Alphabetical (Z-A) ▼</option>
+          </select>
+        </div>
       </div>
 
       <div className="np-section" style={{ borderStyle: 'dashed' }}>

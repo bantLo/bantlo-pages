@@ -19,6 +19,13 @@ export default function Dashboard() {
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [addingFriend, setAddingFriend] = useState(false);
 
+  const [sortBy, setSortBy] = useState<'updated' | 'alpha'>(
+    (localStorage.getItem('bantlo_sort_by') as any) || 'updated'
+  );
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    (localStorage.getItem('bantlo_sort_order') as any) || 'desc'
+  );
+
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
@@ -185,8 +192,37 @@ export default function Dashboard() {
     }
   };
 
-  const normalGroups = groups.filter(g => !g.is_friend_group);
-  const friendGroups = groups.filter(g => g.is_friend_group);
+  const handleSortChange = (newSortBy: 'updated' | 'alpha') => {
+    if (sortBy === newSortBy) {
+      const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+      setSortOrder(newOrder);
+      localStorage.setItem('bantlo_sort_order', newOrder);
+    } else {
+      setSortBy(newSortBy);
+      localStorage.setItem('bantlo_sort_by', newSortBy);
+      const defaultOrder = newSortBy === 'alpha' ? 'asc' : 'desc';
+      setSortOrder(defaultOrder);
+      localStorage.setItem('bantlo_sort_order', defaultOrder);
+    }
+  };
+
+  const getSortedGroups = (list: any[]) => {
+    return [...list].sort((a, b) => {
+      if (sortBy === 'alpha') {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+      } else {
+        const dateA = new Date(a.updated_at || 0).getTime();
+        const dateB = new Date(b.updated_at || 0).getTime();
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+    });
+  };
+
+  const sortedGroups = getSortedGroups(groups);
+  const normalGroups = sortedGroups.filter(g => !g.is_friend_group);
+  const friendGroups = sortedGroups.filter(g => g.is_friend_group);
 
   return (
     <div className="np-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -251,6 +287,55 @@ export default function Dashboard() {
             {showAddFriend ? 'Close Friend' : '+ Friend'}
           </NeoButton>
         </div>
+      </div>
+
+      {/* Group List Sorting Toolbar */}
+      <div style={{ 
+        display: 'inline-flex', 
+        gap: '0.5rem', 
+        marginBottom: '1.5rem', 
+        fontSize: '0.75rem', 
+        textTransform: 'uppercase',
+        border: '2px solid var(--border-color)',
+        padding: '0.4rem 0.8rem',
+        alignItems: 'center',
+        background: 'var(--bg-surface)'
+      }}>
+        <span className="np-text-muted" style={{ fontWeight: 'bold', marginRight: '0.25rem' }}>Sort:</span>
+        
+        <button
+          onClick={() => handleSortChange('updated')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: sortBy === 'updated' ? 'var(--text-accent)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontWeight: sortBy === 'updated' ? 'bold' : 'normal',
+            padding: '0 0.25rem',
+            textDecoration: sortBy === 'updated' ? 'underline' : 'none'
+          }}
+        >
+          Recently Updated {sortBy === 'updated' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+        </button>
+
+        <span className="np-text-muted">|</span>
+
+        <button
+          onClick={() => handleSortChange('alpha')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: sortBy === 'alpha' ? 'var(--text-accent)' : 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontWeight: sortBy === 'alpha' ? 'bold' : 'normal',
+            padding: '0 0.25rem',
+            textDecoration: sortBy === 'alpha' ? 'underline' : 'none'
+          }}
+        >
+          Alphabetical {sortBy === 'alpha' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+        </button>
       </div>
 
       {showCreate && (
