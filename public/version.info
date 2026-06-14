@@ -1,5 +1,5 @@
 {
-  "version": "2.1.2",
-  "message": "Protocol v2.1.2: Fixed visual hover animation clipping in the settled groups container by dynamically toggling overflow-x boundaries on slide animation completion.",
-  "published_at": "2026-06-14T15:11:00.000Z"
+  "version": "2.2.0",
+  "message": "Protocol v2.2.0: Tuned animation settings to prioritize focus on mobile PWAs: added @media (hover: hover) locks to prevent sticky touch hover states, capped tab transitions to 8% displacement, and replaced springy overshoot elastic bounces with snappy exponential ease-outs.",
+  "published_at": "2026-06-14T15:23:00.000Z"
 }
