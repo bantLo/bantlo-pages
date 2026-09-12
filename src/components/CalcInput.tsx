@@ -32,7 +32,9 @@ export default function CalcInput({ value, onValueChange, style, ...rest }: Calc
     setText(value === '' ? '' : String(value));
   }, [value, error]);
 
-  const pending = !error && isExpression(text) ? evaluateExpression(text) : null;
+  // Negative previews are suppressed so a rejected total never looks accepted.
+  const computed = !error && isExpression(text) ? evaluateExpression(text) : null;
+  const pending = computed !== null && computed >= 0 ? computed : null;
 
   const commit = () => {
     const trimmed = text.trim();
@@ -50,6 +52,13 @@ export default function CalcInput({ value, onValueChange, style, ...rest }: Calc
           ? "Can't compute that — check the expression."
           : 'Enter a number or a sum like 80+10.'
       );
+      onValueChange('');
+      return;
+    }
+
+    // Negative intermediates are fine ("-50+80" is 30); a negative total is not.
+    if (result < 0) {
+      setError("Amount can't be negative.");
       onValueChange('');
       return;
     }
@@ -74,7 +83,7 @@ export default function CalcInput({ value, onValueChange, style, ...rest }: Calc
     // Hold expressions back until blur; propagate plain numbers immediately.
     if (!isExpression(next)) {
       const result = evaluateExpression(next);
-      if (result !== null) onValueChange(result);
+      if (result !== null) onValueChange(result < 0 ? '' : result);
     }
   };
 
