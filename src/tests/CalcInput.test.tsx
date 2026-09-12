@@ -97,6 +97,45 @@ describe('CalcInput', () => {
     expect(input).toHaveValue('90');
   });
 
+  it('rejects a negative result and keeps the text', () => {
+    const onValue = vi.fn();
+    render(<Harness onValue={onValue} />);
+    const input = screen.getByPlaceholderText('Total Amount');
+    typeAndBlur(input, '50-80');
+
+    expect(input).toHaveValue('50-80');
+    expect(screen.getByRole('alert')).toHaveTextContent("Amount can't be negative.");
+    expect(onValue).toHaveBeenLastCalledWith('');
+  });
+
+  it('rejects a directly-typed negative number', () => {
+    const onValue = vi.fn();
+    render(<Harness onValue={onValue} />);
+    const input = screen.getByPlaceholderText('Total Amount');
+    typeAndBlur(input, '-50');
+
+    expect(input).toHaveValue('-50');
+    expect(screen.getByRole('alert')).toHaveTextContent("Amount can't be negative.");
+    expect(onValue).toHaveBeenLastCalledWith('');
+  });
+
+  it('allows negative intermediates that total positive', () => {
+    render(<Harness />);
+    const input = screen.getByPlaceholderText('Total Amount');
+    typeAndBlur(input, '-50+80');
+
+    expect(input).toHaveValue('30');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('does not preview a negative result', () => {
+    render(<Harness />);
+    const input = screen.getByPlaceholderText('Total Amount');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '50-80' } });
+    expect(screen.queryByText('= -30.00')).not.toBeInTheDocument();
+  });
+
   it('propagates plain numbers as they are typed', () => {
     const onValue = vi.fn();
     render(<Harness onValue={onValue} />);
