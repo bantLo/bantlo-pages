@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses, fetchUpiHandles } from '../lib/api';
+import { buildUpiIntentUrl, isUpiIntentSupported, UPI_CURRENCY } from '../lib/upi';
 import { getExpensesCached, updateCachedGroupStanding } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import AddExpense from '../components/AddExpense';
@@ -36,7 +37,7 @@ export default function GroupDetails() {
   const [tabDirection, setTabDirection] = useState<'left' | 'right' | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
-  const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
+  const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number, method?: 'manual' | 'upi_intent'} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
 
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
@@ -59,6 +60,21 @@ export default function GroupDetails() {
   }, [id]);
 
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [upiHandles, setUpiHandles] = useState<Record<string, string>>({});
+  const [pendingUpi, setPendingUpi] = useState<{ to: string; toName: string; amount: number } | null>(null);
+
+  // Opening a UPI intent backgrounds the PWA, and the OS may tear the page down
+  // entirely. Parking the pending payment in sessionStorage means the "did that
+  // go through?" prompt survives the round trip instead of silently vanishing.
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const stored = sessionStorage.getItem(`bantlo_pending_upi_${id}`);
+      if (stored) setPendingUpi(JSON.parse(stored));
+    } catch (err) {
+      console.error('Could not restore pending UPI payment:', err);
+    }
+  }, [id]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -144,6 +160,12 @@ export default function GroupDetails() {
       setMembers(mData);
       setBalances(bData);
       setExpenses(eData);
+
+      // Best-effort: a missing payment shortcut must never block the ledger.
+      fetchUpiHandles(mData.map((m: any) => m.user_id))
+        .then(setUpiHandles)
+        .catch(err => console.error('UPI handle lookup failed:', err));
+
       setExpenseCount(countTemp);
       setHasMore(countTemp > eData.length);
 
@@ -398,6 +420,78 @@ export default function GroupDetails() {
 
 
 
+  /**
+   * Hands off to the user's UPI app with the payment pre-filled, and parks the
+   * details so we can ask for confirmation on their return.
+   *
+   * There is no callback from a UPI intent — we cannot know whether the payment
+   * happened. The settlement is only recorded when the user says so.
+   */
+  const handleUpiPay = (toUserId: string, toName: string, amount: number) => {
+    const url = buildUpiIntentUrl({
+      payeeUpiId: upiHandles[toUserId],
+      payeeName: toName,
+      amount,
+      note: `bantLo ${group?.name || 'settlement'}`
+    });
+
+    if (!url) {
+      setToastMessage({ text: 'That UPI ID looks invalid. Ask them to re-check it in Account Settings.', type: 'error' });
+      return;
+    }
+
+    const pending = { to: toUserId, toName, amount };
+    setPendingUpi(pending);
+    try {
+      sessionStorage.setItem(`bantlo_pending_upi_${id}`, JSON.stringify(pending));
+    } catch (err) {
+      console.error('Could not persist pending UPI payment:', err);
+    }
+
+    window.location.href = url;
+  };
+
+  const dismissPendingUpi = () => {
+    setPendingUpi(null);
+    try {
+      sessionStorage.removeItem(`bantlo_pending_upi_${id}`);
+    } catch (err) {
+      console.error('Could not clear pending UPI payment:', err);
+    }
+  };
+
+  const confirmPendingUpi = () => {
+    if (!pendingUpi) return;
+    // Route through the normal settlement form, pre-filled, so the user gets one
+    // last look at the amount before anything is written to the ledger.
+    setQuickSettle({ from: currentUserId, to: pendingUpi.to, amount: pendingUpi.amount, method: 'upi_intent' });
+    setShowAddSettlement(true);
+    dismissPendingUpi();
+  };
+
+  const renderPendingUpiPrompt = () => {
+    if (!pendingUpi) return null;
+    return (
+      <div style={{ padding: '1.25rem', background: 'var(--bg-dark)', border: '2px dashed var(--text-accent)' }}>
+        <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: 'var(--text-accent)', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+          Payment opened
+        </p>
+        <p className="np-text-muted" style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', lineHeight: 1.5 }}>
+          Did your {group?.currency} {pendingUpi.amount.toFixed(2)} payment to <strong>{pendingUpi.toName}</strong> go through?
+          bantLo can't see your UPI app, so nothing is recorded until you confirm.
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <NeoButton variant="primary" style={{ flex: 1, minWidth: '130px', borderColor: 'var(--text-accent)' }} onClick={confirmPendingUpi}>
+            Yes, record it
+          </NeoButton>
+          <NeoButton style={{ flex: 1, minWidth: '130px' }} onClick={dismissPendingUpi}>
+            Not yet
+          </NeoButton>
+        </div>
+      </div>
+    );
+  };
+
   const renderBalancesAndSuggestions = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -427,6 +521,7 @@ export default function GroupDetails() {
             Quick Settle Suggestions
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {renderPendingUpiPrompt()}
             {(() => {
               const debtors = balances.filter(b => Number(b.balance) < -0.01).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) }));
               const creditors = balances.filter(b => Number(b.balance) > 0.01).map(b => ({ ...b, amount: Number(b.balance) }));
@@ -451,7 +546,15 @@ export default function GroupDetails() {
               return results.map((r, i) => {
                 const fromProfile = members.find(m => m.user_id === r.from.user_id)?.profiles;
                 const toProfile = members.find(m => m.user_id === r.to.user_id)?.profiles;
-                
+
+                // Only the payer gets the shortcut, and only when the payee has a
+                // handle. UPI settles in INR, so other currencies keep manual entry.
+                const payeeName = toProfile?.display_name || toProfile?.email || 'bantLo user';
+                const payeeHandle = upiHandles[r.to.user_id];
+                const canPayViaUpi = r.from.user_id === currentUserId
+                  && !!payeeHandle
+                  && group?.currency === UPI_CURRENCY;
+
                 return (
                   <div 
                     key={i} 
@@ -498,6 +601,34 @@ export default function GroupDetails() {
                         Settle Now ›
                       </button>
                     </div>
+
+                    {canPayViaUpi && (
+                      isUpiIntentSupported() ? (
+                        <NeoButton
+                          variant="primary"
+                          style={{ width: '100%', borderColor: 'var(--text-accent)' }}
+                          onClick={() => handleUpiPay(r.to.user_id, payeeName, Number(r.amount))}
+                        >
+                          Pay {group.currency} {r.amount.toFixed(2)} via UPI
+                        </NeoButton>
+                      ) : (
+                        // Desktop browsers can't hand off to a payment app, so the
+                        // useful thing is the address itself.
+                        <div style={{ padding: '0.6rem 0.75rem', border: '1px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+                          <span className="np-text-muted" style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{payeeHandle}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard?.writeText(payeeHandle)
+                                .then(() => setToastMessage({ text: 'UPI ID copied.', type: 'success' }))
+                                .catch(() => setToastMessage({ text: 'Could not copy. Select it manually.', type: 'error' }));
+                            }}
+                            style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.7rem', textTransform: 'uppercase', fontFamily: 'inherit' }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      )
+                    )}
                   </div>
                 );
               });
@@ -678,6 +809,7 @@ export default function GroupDetails() {
                   initialFromId={quickSettle?.from}
                   initialToId={quickSettle?.to}
                   initialAmount={quickSettle?.amount}
+                  method={quickSettle?.method}
                   onComplete={handleSettlementSaved} 
                   onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
                 />
@@ -899,6 +1031,7 @@ export default function GroupDetails() {
                 initialFromId={quickSettle?.from}
                 initialToId={quickSettle?.to}
                 initialAmount={quickSettle?.amount}
+                method={quickSettle?.method}
                 onComplete={handleSettlementSaved} 
                 onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
               />

@@ -18,9 +18,14 @@ interface AddSettlementProps {
   initialToId?: string;
   initialAmount?: number;
   editId?: string;
+  /**
+   * How the money actually moved. 'upi_intent' records only that a payment app
+   * was opened with these details — it is not confirmation of transfer.
+   */
+  method?: 'manual' | 'upi_intent';
 }
 
-export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId, initialAmount, editId }: AddSettlementProps) {
+export default function AddSettlement({ groupId, members, onComplete, onCancel, initialFromId, initialToId, initialAmount, editId, method = 'manual' }: AddSettlementProps) {
   const [fromUserId, setFromUserId] = useState(initialFromId || '');
   const [toUserId, setToUserId] = useState(initialToId || '');
   const [amount, setAmount] = useState<number | ''>(initialAmount || '');
@@ -37,7 +42,7 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
       if (editId) {
         await updateSettlement(editId, Number(amount));
       } else {
-        await createSettlement(groupId, fromUserId, toUserId, Number(amount));
+        await createSettlement(groupId, fromUserId, toUserId, Number(amount), method);
       }
       onComplete();
     } catch (err: any) {
