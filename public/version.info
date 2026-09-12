@@ -1,5 +1,5 @@
 {
-  "version": "2.3.0",
-  "message": "Protocol v2.3.0: Amount fields are now a calculator — type 80+10 and it resolves to 90 on blur, with a live preview before you commit. Backed by a hand-rolled arithmetic parser (no eval) supporting + - * / and parentheses. Input is restricted to mathematical characters, and malformed sums surface an inline error without discarding what you typed.",
-  "published_at": "2026-09-12T14:22:12.000Z"
+  "version": "2.3.1",
+  "message": "Protocol v2.3.1: Amount fields no longer accept negative totals — \"50-80\" and a directly-typed \"-50\" are now rejected inline instead of slipping through to submit. Negative intermediates still work, so \"-50+80\" correctly totals 30.",
+  "published_at": "2026-09-12T17:03:02.000Z"
 }
