@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses, fetchUpiHandles } from '../lib/api';
-import { buildUpiIntentUrl, isUpiIntentSupported, UPI_CURRENCY } from '../lib/upi';
 import { getExpensesCached, updateCachedGroupStanding } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
+import SettleUpModal from '../components/SettleUpModal';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 
@@ -62,6 +62,7 @@ export default function GroupDetails() {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [upiHandles, setUpiHandles] = useState<Record<string, string>>({});
   const [pendingUpi, setPendingUpi] = useState<{ to: string; toName: string; amount: number } | null>(null);
+  const [settleTarget, setSettleTarget] = useState<{ from: string; to: string; toName: string; amount: number } | null>(null);
 
   // Opening a UPI intent backgrounds the PWA, and the OS may tear the page down
   // entirely. Parking the pending payment in sessionStorage means the "did that
@@ -427,20 +428,10 @@ export default function GroupDetails() {
    * There is no callback from a UPI intent — we cannot know whether the payment
    * happened. The settlement is only recorded when the user says so.
    */
-  const handleUpiPay = (toUserId: string, toName: string, amount: number) => {
-    const url = buildUpiIntentUrl({
-      payeeUpiId: upiHandles[toUserId],
-      payeeName: toName,
-      amount,
-      note: `bantLo ${group?.name || 'settlement'}`
-    });
+  const handleUpiPay = (url: string) => {
+    if (!settleTarget) return;
 
-    if (!url) {
-      setToastMessage({ text: 'That UPI ID looks invalid. Ask them to re-check it in Account Settings.', type: 'error' });
-      return;
-    }
-
-    const pending = { to: toUserId, toName, amount };
+    const pending = { to: settleTarget.to, toName: settleTarget.toName, amount: settleTarget.amount };
     setPendingUpi(pending);
     try {
       sessionStorage.setItem(`bantlo_pending_upi_${id}`, JSON.stringify(pending));
@@ -448,7 +439,16 @@ export default function GroupDetails() {
       console.error('Could not persist pending UPI payment:', err);
     }
 
+    setSettleTarget(null);
     window.location.href = url;
+  };
+
+  /** "Already paid" — straight to the settlement form, recorded as a manual payment. */
+  const handleMarkPaid = () => {
+    if (!settleTarget) return;
+    setQuickSettle({ from: settleTarget.from, to: settleTarget.to, amount: settleTarget.amount, method: 'manual' });
+    setSettleTarget(null);
+    setShowAddSettlement(true);
   };
 
   const dismissPendingUpi = () => {
@@ -547,13 +547,7 @@ export default function GroupDetails() {
                 const fromProfile = members.find(m => m.user_id === r.from.user_id)?.profiles;
                 const toProfile = members.find(m => m.user_id === r.to.user_id)?.profiles;
 
-                // Only the payer gets the shortcut, and only when the payee has a
-                // handle. UPI settles in INR, so other currencies keep manual entry.
                 const payeeName = toProfile?.display_name || toProfile?.email || 'bantLo user';
-                const payeeHandle = upiHandles[r.to.user_id];
-                const canPayViaUpi = r.from.user_id === currentUserId
-                  && !!payeeHandle
-                  && group?.currency === UPI_CURRENCY;
 
                 return (
                   <div 
@@ -581,10 +575,12 @@ export default function GroupDetails() {
                       </span>
                       
                       <button 
-                        onClick={() => { 
-                          setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
-                          setShowAddSettlement(true); 
-                        }}
+                        onClick={() => setSettleTarget({
+                          from: r.from.user_id,
+                          to: r.to.user_id,
+                          toName: payeeName,
+                          amount: Number(r.amount)
+                        })}
                         style={{ 
                           background: 'var(--text-accent)', 
                           color: 'black', 
@@ -602,33 +598,6 @@ export default function GroupDetails() {
                       </button>
                     </div>
 
-                    {canPayViaUpi && (
-                      isUpiIntentSupported() ? (
-                        <NeoButton
-                          variant="primary"
-                          style={{ width: '100%', borderColor: 'var(--text-accent)' }}
-                          onClick={() => handleUpiPay(r.to.user_id, payeeName, Number(r.amount))}
-                        >
-                          Pay {group.currency} {r.amount.toFixed(2)} via UPI
-                        </NeoButton>
-                      ) : (
-                        // Desktop browsers can't hand off to a payment app, so the
-                        // useful thing is the address itself.
-                        <div style={{ padding: '0.6rem 0.75rem', border: '1px dashed var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-                          <span className="np-text-muted" style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{payeeHandle}</span>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard?.writeText(payeeHandle)
-                                .then(() => setToastMessage({ text: 'UPI ID copied.', type: 'success' }))
-                                .catch(() => setToastMessage({ text: 'Could not copy. Select it manually.', type: 'error' }));
-                            }}
-                            style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.7rem', textTransform: 'uppercase', fontFamily: 'inherit' }}
-                          >
-                            Copy
-                          </button>
-                        </div>
-                      )
-                    )}
                   </div>
                 );
               });
@@ -689,6 +658,18 @@ export default function GroupDetails() {
 
   return (
     <div className="np-container np-fade-in">
+      <SettleUpModal
+        isOpen={!!settleTarget}
+        payeeName={settleTarget?.toName || ''}
+        payeeUpiId={settleTarget ? upiHandles[settleTarget.to] : undefined}
+        amount={settleTarget?.amount || 0}
+        currency={group?.currency || ''}
+        groupName={group?.name}
+        onPayViaUpi={handleUpiPay}
+        onMarkPaid={handleMarkPaid}
+        onClose={() => setSettleTarget(null)}
+      />
+
       {toastMessage && (
         <div className="np-toast-in" style={{
           position: 'fixed',
