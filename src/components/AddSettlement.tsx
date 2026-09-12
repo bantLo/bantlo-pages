@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import NeoButton from './NeoButton';
+import CalcInput from './CalcInput';
 
 import { createSettlement, updateSettlement } from '../lib/api';
 
@@ -107,12 +108,10 @@ export default function AddSettlement({ groupId, members, onComplete, onCancel, 
 
       <div style={{ marginBottom: '1.5rem' }}>
         <p className="np-text-muted" style={{ marginBottom: '0.5rem', fontSize: '0.85rem' }}>Amount</p>
-        <input 
-          type="number" 
-          step="0.01"
-          placeholder="Amount (0.00)" 
+        <CalcInput
+          placeholder="Amount (0.00 or 80+10)"
           value={amount}
-          onChange={(e) => setAmount(parseFloat(e.target.value))}
+          onValueChange={setAmount}
           required
           autoFocus={!!editId}
           style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', fontSize: '1.2rem', fontWeight: 'bold' }}

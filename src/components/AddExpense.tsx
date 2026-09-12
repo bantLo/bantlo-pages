@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import NeoButton from './NeoButton';
+import CalcInput from './CalcInput';
 import { updateFullExpense } from '../lib/api';
 
 interface Member {
@@ -260,12 +261,10 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
       </div>
       
       <div style={{ marginBottom: '1.5rem' }}>
-        <input 
-          type="number" 
-          step="0.01"
-          placeholder="Total Amount (0.00)" 
+        <CalcInput
+          placeholder="Total Amount (0.00 or 80+10)"
           value={amount}
-          onChange={(e) => setAmount(parseFloat(e.target.value))}
+          onValueChange={setAmount}
           required
           style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', fontSize: '1.2rem', fontWeight: 'bold', fontFamily: 'inherit' }}
         />
