@@ -1,5 +1,8 @@
-const CACHE_NAME = 'bantlo-app-shell-v1';
-const DATA_CACHE_NAME = 'bantlo-data-cache-v1';
+// Bumped to v2 to evict shells poisoned by the old cache-first navigation
+// handling — activate() only deletes caches whose name differs from this one,
+// so a constant name meant the cleanup never ran. Bump this whenever cached
+// entries need to be discarded wholesale.
+const CACHE_NAME = 'bantlo-app-shell-v2';
 
 // App shell files setup
 const STATIC_ASSETS = [
@@ -19,6 +22,10 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// Note: the app's offline data — cached groups, expenses and the pending
+// mutation queue — lives in an IndexedDB database, which happens to share the
+// name 'bantlo-data-cache-v1'. That is a different storage API entirely and is
+// unreachable from caches.delete(), so nothing here can touch it.
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
   // Preemptively clean up old caches if version changes
@@ -26,7 +33,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME) {
+          if (cacheName !== CACHE_NAME) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -45,22 +52,47 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. NETWORK-ONLY / NETWORK-FIRST for dynamic or frequent-update paths
-  // Gateway pages should never be stale (Landing, Auth, About)
-  const isGateway = url.pathname === '/' || url.pathname === '/auth' || url.pathname === '/about';
+  // 1. NETWORK-FIRST for HTML and for anything that must never be stale.
+  //
+  // Every navigation, not an allow-list of paths. The build emits
+  // content-hashed asset filenames, so a stale index.html asks for files that
+  // no longer exist on the origin — the app then fails to boot at all. Serving
+  // HTML cache-first is only safe when asset URLs are stable, and here they are
+  // deliberately not.
+  //
+  // This previously covered only '/', '/auth' and '/about'. Because the host
+  // serves index.html for unknown SPA routes, opening /dashboard or
+  // /groups/:id fell through to the cache-first branch below and stored an
+  // index.html under that path — permanently, since the cache name never
+  // changed. After a later deploy those users got a white screen with no way
+  // back: the version-check prompt that would have recovered them is React
+  // code, which never runs when the shell is broken.
   const isVersion = url.pathname === '/version.info';
 
-  if (isGateway || isVersion) {
+  if (event.request.mode === 'navigate' || isVersion) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' }).catch(() => {
-        // Only return cached version if offline
-        return caches.match(event.request);
-      })
+      fetch(event.request, { cache: 'no-store' })
+        .then((networkResponse) => {
+          // Keep one copy of the shell for offline use, always under
+          // /index.html rather than the requested path — otherwise the cache
+          // accumulates a separate HTML entry per route visited.
+          if (event.request.mode === 'navigate' && networkResponse && networkResponse.status === 200) {
+            const resToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', resToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline: any cached shell beats a browser error page.
+          return caches.match(event.request).then((cached) => cached || caches.match('/index.html'));
+        })
     );
     return;
   }
 
-  // Cache-first for all other static assets (App Shell)
+  // Cache-first for hashed static assets. Safe precisely because the build
+  // renames a file whenever its contents change, so an entry can never go
+  // stale under a name that now means something else.
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
