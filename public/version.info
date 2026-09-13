@@ -1,5 +1,5 @@
 {
-  "version": "2.4.0",
-  "message": "Protocol v2.4.0: UPI settle-up. Save a UPI ID in Account Settings and group members can clear what they owe you in one tap — bantLo opens their payment app with payee, amount and reference pre-filled, then asks for confirmation before recording the settlement. Payment handles are visible only to people you share a group with.",
-  "published_at": "2026-09-12T18:14:50.000Z"
+  "version": "2.5.0",
+  "message": "Protocol v2.5.0: Quick Add presets. Define a recurring expense once — name, who it splits between, optionally a fixed amount and usual payer — then book it in two taps. Rent prefills 45,000; milk asks for the amount and shows what you paid last time. Manage presets under the group's Manage tab.",
+  "published_at": "2026-09-13T21:58:33.000Z"
 }

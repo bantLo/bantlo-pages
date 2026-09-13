@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
 import { getDB, updateCachedGroupsSync, updateExpensesSync, getExpensesCached } from './db';
+import { computeEqualSplits } from './splits';
+import { EXPENSE_SELECT } from './expenseFields';
+
+export { EXPENSE_SELECT };
 
 // Fetch groups a user is part of
 export async function fetchUserGroups(userId: string) {
@@ -133,7 +137,7 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select('id, group_id, description, amount, created_at, split_type, is_settlement, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
+      .select(EXPENSE_SELECT)
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -158,7 +162,7 @@ export async function fetchRecentExpenses(groupId: string, limit: number = 20) {
 export async function fetchMoreExpenses(groupId: string, offset: number, limit: number = 20) {
   const { data, error } = await supabase
     .from('expenses')
-    .select('id, group_id, description, amount, created_at, split_type, is_settlement, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
+    .select(EXPENSE_SELECT)
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -231,7 +235,7 @@ export async function updateFullExpense(
   // 4. Return the full record
   const { data, error: e4 } = await supabase
     .from('expenses')
-    .select('id, group_id, description, amount, created_at, split_type, is_settlement, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
+    .select(EXPENSE_SELECT)
     .eq('id', expenseId)
     .single();
     
@@ -273,6 +277,212 @@ export async function deleteGroup(groupId: string) {
 export async function removeMember(groupId: string, userId: string) {
   const { error } = await supabase.from('group_members').delete().match({ group_id: groupId, user_id: userId });
   if (error) throw error;
+
+  // preset_members cascades from auth.users, not from group_members — leaving a
+  // group doesn't delete the account, so without this the rosters keep pointing
+  // at someone no longer here. Quick-add filters ex-members out defensively, but
+  // the stale rows would still show up when editing a preset.
+  const { data: presets } = await supabase
+    .from('expense_presets')
+    .select('id')
+    .eq('group_id', groupId);
+
+  if (presets?.length) {
+    const { error: cleanupError } = await supabase
+      .from('preset_members')
+      .delete()
+      .eq('user_id', userId)
+      .in('preset_id', presets.map(p => p.id));
+
+    // The member is already out; a stale roster row is cosmetic by comparison.
+    if (cleanupError) console.error('Failed clearing preset memberships:', cleanupError);
+  }
+}
+
+// ==========================================
+// Expense Presets (Quick Add)
+// ==========================================
+
+export interface ExpensePreset {
+  id: string;
+  group_id: string;
+  name: string;
+  default_amount: number | null;
+  payer_id: string | null;
+  members: { user_id: string }[];
+}
+
+export async function fetchGroupPresets(groupId: string): Promise<ExpensePreset[]> {
+  const { data, error } = await supabase
+    .from('expense_presets')
+    .select('id, group_id, name, default_amount, payer_id, members:preset_members(user_id)')
+    .eq('group_id', groupId)
+    .order('name');
+
+  if (error) throw error;
+  return (data || []) as ExpensePreset[];
+}
+
+export async function createPreset(
+  groupId: string,
+  name: string,
+  memberIds: string[],
+  options: { defaultAmount?: number | null; payerId?: string | null } = {}
+) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Authentication required');
+
+  const { data, error } = await supabase
+    .from('expense_presets')
+    .insert([{
+      group_id: groupId,
+      name: name.trim(),
+      default_amount: options.defaultAmount ?? null,
+      payer_id: options.payerId ?? null,
+      created_by: user.id
+    }])
+    .select('id')
+    .single();
+
+  if (error) throw error;
+
+  try {
+    await setPresetMembers(data.id, memberIds);
+  } catch (err) {
+    // A preset with no roster would silently split between nobody, so don't
+    // leave one behind.
+    await supabase.from('expense_presets').delete().eq('id', data.id);
+    throw err;
+  }
+
+  return data.id as string;
+}
+
+export async function updatePreset(
+  presetId: string,
+  updates: { name?: string; default_amount?: number | null; payer_id?: string | null }
+) {
+  const { error } = await supabase.from('expense_presets').update(updates).eq('id', presetId);
+  if (error) throw error;
+}
+
+export async function deletePreset(presetId: string) {
+  // preset_members cascades; expenses.preset_id is ON DELETE SET NULL, so the
+  // expenses booked through this preset survive untouched.
+  const { error } = await supabase.from('expense_presets').delete().eq('id', presetId);
+  if (error) throw error;
+}
+
+/** Replaces the roster wholesale — same delete-then-insert shape as updateFullExpense. */
+export async function setPresetMembers(presetId: string, memberIds: string[]) {
+  if (memberIds.length === 0) throw new Error('A preset needs at least one member');
+
+  await supabase.from('preset_members').delete().eq('preset_id', presetId);
+
+  const { error } = await supabase
+    .from('preset_members')
+    .insert(memberIds.map(user_id => ({ preset_id: presetId, user_id })));
+
+  if (error) throw error;
+}
+
+/**
+ * The most recent amount booked through each preset in a group, keyed by
+ * preset_id — shown as a "last time" hint for presets with no fixed amount.
+ */
+export async function fetchLastPresetAmounts(groupId: string): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('preset_id, amount, created_at')
+    .eq('group_id', groupId)
+    .not('preset_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (error) {
+    // A convenience hint is never worth breaking the group screen over.
+    console.error('Failed fetching last preset amounts:', error);
+    return {};
+  }
+
+  const latest: Record<string, number> = {};
+  for (const row of data || []) {
+    // Rows arrive newest-first, so the first sighting of a preset is its latest.
+    if (row.preset_id && latest[row.preset_id] === undefined) {
+      latest[row.preset_id] = Number(row.amount);
+    }
+  }
+  return latest;
+}
+
+/**
+ * Books an expense from a preset: equal split across the roster, single payer.
+ *
+ * The roster is filtered against current group members by the caller — a preset
+ * can outlive someone's removal from the group, and splitting to an ex-member
+ * would corrupt balances.
+ */
+export async function createExpenseFromPreset(
+  groupId: string,
+  preset: { id: string; name: string },
+  amount: number,
+  payerId: string,
+  memberIds: string[]
+) {
+  if (memberIds.length === 0) throw new Error('This preset has no members left in the group');
+
+  let createdExpenseId: string | null = null;
+  try {
+    const { data: expense, error: eError } = await supabase
+      .from('expenses')
+      .insert([{
+        group_id: groupId,
+        amount,
+        description: preset.name,
+        split_type: 0, // Equal
+        preset_id: preset.id
+      }])
+      .select('id')
+      .single();
+
+    if (eError) throw eError;
+    createdExpenseId = expense.id;
+
+    const { error: pError } = await supabase
+      .from('expense_payments')
+      .insert([{ expense_id: expense.id, user_id: payerId, amount_paid: amount }]);
+    if (pError) throw pError;
+
+    const splits = computeEqualSplits(amount, memberIds);
+    const { error: sError } = await supabase
+      .from('expense_splits')
+      .insert(
+        Object.entries(splits)
+          .filter(([, owed]) => owed > 0)
+          .map(([user_id, amount_owed]) => ({ expense_id: expense.id, user_id, amount_owed }))
+      );
+    if (sError) throw sError;
+
+    const { data: full, error: fError } = await supabase
+      .from('expenses')
+      .select(EXPENSE_SELECT)
+      .eq('id', expense.id)
+      .single();
+    if (fError) throw fError;
+
+    return full;
+  } catch (error) {
+    // Without cleanup a half-written expense would leave payments or splits
+    // booked against a total they no longer match.
+    if (createdExpenseId) {
+      try {
+        await supabase.from('expenses').delete().eq('id', createdExpenseId);
+      } catch (err) {
+        console.error('Failed to clean up dangling preset expense:', err);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function fetchExpenseCount(groupId: string) {
