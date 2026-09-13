@@ -1,5 +1,5 @@
 {
-  "version": "2.5.0",
-  "message": "Protocol v2.5.0: Quick Add presets. Define a recurring expense once — name, who it splits between, optionally a fixed amount and usual payer — then book it in two taps. Rent prefills 45,000; milk asks for the amount and shows what you paid last time. Manage presets under the group's Manage tab.",
-  "published_at": "2026-09-13T21:58:33.000Z"
+  "version": "2.5.1",
+  "message": "Protocol v2.5.1: Fixed a caching fault where opening bantLo through a bookmark or a shared group link could serve an outdated app shell after a release, leaving a blank screen with no way to recover from inside the app. Offline data and pending changes are unaffected.",
+  "published_at": "2026-09-13T23:25:11.000Z"
 }
