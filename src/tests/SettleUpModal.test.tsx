@@ -20,6 +20,7 @@ const defaultProps = {
   amount: 2400,
   currency: 'INR',
   groupName: 'Flat 402',
+  isPayer: true,
   onPayViaUpi: vi.fn(),
   onMarkPaid: vi.fn(),
   onClose: vi.fn(),
@@ -90,6 +91,16 @@ describe('SettleUpModal', () => {
 
     expect(screen.queryByText('Pay via UPI')).not.toBeInTheDocument();
     expect(screen.getByText('ankit@ybl')).toBeInTheDocument();
+  });
+
+  it('hides the UPI option when the viewer is the payee, not the payer', () => {
+    // "Jatin pays Harshit" viewed by Harshit: he is owed the money, so offering
+    // him a UPI payment would be a payment to himself.
+    render(<SettleUpModal {...defaultProps} isPayer={false} />);
+
+    expect(screen.queryByText('Pay via UPI')).not.toBeInTheDocument();
+    expect(screen.queryByText(/hasn't added a UPI ID/)).not.toBeInTheDocument();
+    expect(screen.getByText('Already Paid — Mark Settled')).toBeInTheDocument();
   });
 
   it('fires onMarkPaid and onClose from their buttons', async () => {

@@ -665,6 +665,7 @@ export default function GroupDetails() {
         amount={settleTarget?.amount || 0}
         currency={group?.currency || ''}
         groupName={group?.name}
+        isPayer={settleTarget?.from === currentUserId}
         onPayViaUpi={handleUpiPay}
         onMarkPaid={handleMarkPaid}
         onClose={() => setSettleTarget(null)}
@@ -897,111 +898,7 @@ export default function GroupDetails() {
 
         {activeTab === 'balances' && (
           <div className={animClass}>
-          <div className="np-grid-desktop">
-            <div className="np-section" style={{ borderStyle: 'dashed' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Member Balances</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {balances.map((b: any, idx: number) => {
-                  const amt = Number(b.balance);
-                  const member = members.find(m => m.user_id === b.user_id);
-                  return (
-                    <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                         <span>{member?.profiles?.display_name || member?.profiles?.email || 'Unknown User'}</span>
-                         <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{member?.profiles?.email || 'No email registered'}</span>
-                      </div>
-                      <span style={{ fontWeight: 'bold', color: amt === 0 ? 'var(--text-secondary)' : (amt > 0 ? 'var(--text-accent)' : 'var(--text-danger)') }}>
-                        {amt > 0 ? '+' : ''}{amt.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="np-section" style={{ borderStyle: 'dotted', borderColor: 'var(--text-accent)', background: 'rgba(0,183,114,0.03)' }}>
-              <h2 style={{ fontSize: '1.0rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-accent)', letterSpacing: '1px' }}>
-                Quick Settle Suggestions
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {(() => {
-                  const debtors = balances.filter(b => Number(b.balance) < -0.01).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) }));
-                  const creditors = balances.filter(b => Number(b.balance) > 0.01).map(b => ({ ...b, amount: Number(b.balance) }));
-                  
-                  const results = [];
-                  let d = 0, c = 0;
-                  while(d < debtors.length && c < creditors.length) {
-                    const amt = Math.min(debtors[d].amount, creditors[c].amount);
-                    results.push({ from: debtors[d], to: creditors[c], amount: amt });
-                    debtors[d].amount -= amt;
-                    creditors[c].amount -= amt;
-                    if (debtors[d].amount < 0.01) d++;
-                    if (creditors[c].amount < 0.01) c++;
-                  }
-
-                  if (results.length === 0) return (
-                    <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed #333' }}>
-                      <p className="np-text-muted" style={{ margin: 0 }}>Everyone is settled! ✔</p>
-                    </div>
-                  );
-
-                  return results.map((r, i) => {
-                    const fromProfile = members.find(m => m.user_id === r.from.user_id)?.profiles;
-                    const toProfile = members.find(m => m.user_id === r.to.user_id)?.profiles;
-                    
-                    return (
-                      <div 
-                        key={i} 
-                        style={{ 
-                          padding: '1.25rem', 
-                          background: 'var(--bg-dark)', 
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '0px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '1rem'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'white' }}>
-                          <span style={{ fontWeight: 'bold' }}>{fromProfile?.display_name || 'User'}</span>
-                          <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.2rem' }}>pays</span>
-                          <span style={{ opacity: 0.3 }}>→</span>
-                          <span style={{ fontWeight: 'bold' }}>{toProfile?.display_name || 'User'}</span>
-                        </div>
-                        
-                        <div className="np-flex-between">
-                          <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-accent)' }}>
-                            {group.currency} {r.amount.toFixed(2)}
-                          </span>
-                          
-                          <button 
-                            onClick={() => { 
-                              setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
-                              setShowAddSettlement(true); 
-                            }}
-                            style={{ 
-                              background: 'var(--text-accent)', 
-                              color: 'black', 
-                              border: '2px solid black', 
-                              padding: '0.4rem 0.8rem', 
-                              fontWeight: 'bold', 
-                              cursor: 'pointer', 
-                              fontSize: '0.75rem',
-                              borderRadius: '0px',
-                              boxShadow: '2px 2px 0px black',
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            Settle Now ›
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-          </div>
+          {renderBalancesAndSuggestions()}
 
           {showAddSettlement && (
             <div style={{ marginTop: '1.5rem' }}>

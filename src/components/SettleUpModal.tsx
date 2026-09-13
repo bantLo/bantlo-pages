@@ -8,6 +8,11 @@ interface SettleUpModalProps {
   amount: number;
   currency: string;
   groupName?: string;
+  /**
+   * Whether the viewer is the one who owes. Only the debtor can pay — showing
+   * the option to anyone else offers a creditor a payment to themselves.
+   */
+  isPayer: boolean;
   onPayViaUpi: (url: string) => void;
   onMarkPaid: () => void;
   onClose: () => void;
@@ -28,6 +33,7 @@ export default function SettleUpModal({
   amount,
   currency,
   groupName,
+  isPayer,
   onPayViaUpi,
   onMarkPaid,
   onClose,
@@ -38,9 +44,11 @@ export default function SettleUpModal({
     ? buildUpiIntentUrl({ payeeUpiId, payeeName, amount, note: `bantLo ${groupName || 'settlement'}` })
     : null;
 
-  const canOpenIntent = !!intentUrl && currency === UPI_CURRENCY && isUpiIntentSupported();
+  // UPI settles in INR, so other currencies keep manual entry.
+  const upiUsable = isPayer && !!intentUrl && currency === UPI_CURRENCY;
+  const canOpenIntent = upiUsable && isUpiIntentSupported();
   // Desktop can't hand off to a payment app, so the useful thing is the address.
-  const showCopyableHandle = !!intentUrl && currency === UPI_CURRENCY && !isUpiIntentSupported();
+  const showCopyableHandle = upiUsable && !isUpiIntentSupported();
 
   return (
     <div
@@ -95,7 +103,7 @@ export default function SettleUpModal({
             </div>
           )}
 
-          {!intentUrl && (
+          {isPayer && !intentUrl && (
             <p className="np-text-muted" style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', lineHeight: 1.5 }}>
               {payeeName} hasn't added a UPI ID, so there's nothing to pay into from here.
               They can add one under Account Settings to enable one-tap payments.
