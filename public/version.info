@@ -1,5 +1,5 @@
 {
-  "version": "2.3.1",
-  "message": "Protocol v2.3.1: Amount fields no longer accept negative totals — \"50-80\" and a directly-typed \"-50\" are now rejected inline instead of slipping through to submit. Negative intermediates still work, so \"-50+80\" correctly totals 30.",
-  "published_at": "2026-09-12T17:03:02.000Z"
+  "version": "2.4.0",
+  "message": "Protocol v2.4.0: UPI settle-up. Save a UPI ID in Account Settings and group members can clear what they owe you in one tap — bantLo opens their payment app with payee, amount and reference pre-filled, then asks for confirmation before recording the settlement. Payment handles are visible only to people you share a group with.",
+  "published_at": "2026-09-12T18:14:50.000Z"
 }

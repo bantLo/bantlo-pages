@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { deleteAccount } from '../lib/api';
+import { deleteAccount, fetchMyUpiId, saveMyUpiId } from '../lib/api';
+import { isValidUpiId, normalizeUpiId } from '../lib/upi';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 
@@ -13,6 +14,16 @@ export default function AccountSettings() {
 
   const [newDisplayName, setNewDisplayName] = useState('');
   const [displayNameMsg, setDisplayNameMsg] = useState('');
+
+  const [upiId, setUpiId] = useState('');
+  const [upiMsg, setUpiMsg] = useState('');
+  const [upiSaving, setUpiSaving] = useState(false);
+
+  useEffect(() => {
+    fetchMyUpiId()
+      .then(setUpiId)
+      .catch(err => console.error('Failed loading UPI ID:', err));
+  }, []);
 
   useEffect(() => {
     let interval: any;
@@ -49,6 +60,27 @@ export default function AccountSettings() {
     } else {
       setDisplayNameMsg('Display Name instantly updated!');
       setNewDisplayName('');
+    }
+  };
+
+  const handleUpdateUpiId = async () => {
+    const trimmed = upiId.trim();
+    // An empty value is a deliberate "remove my UPI ID", not a validation failure.
+    if (trimmed && !isValidUpiId(trimmed)) {
+      setUpiMsg('That does not look like a UPI ID. Expected something like name@bank.');
+      return;
+    }
+
+    setUpiSaving(true);
+    try {
+      const normalized = trimmed ? normalizeUpiId(trimmed) : '';
+      await saveMyUpiId(normalized);
+      setUpiId(normalized);
+      setUpiMsg(normalized ? 'UPI ID instantly updated!' : 'UPI ID removed.');
+    } catch (err: any) {
+      setUpiMsg(err.message || 'Could not save UPI ID.');
+    } finally {
+      setUpiSaving(false);
     }
   };
 
@@ -93,6 +125,36 @@ export default function AccountSettings() {
         {displayNameMsg && (
           <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: displayNameMsg.includes('updated') ? 'var(--text-accent)' : 'var(--text-danger)' }}>
             {displayNameMsg}
+          </p>
+        )}
+      </div>
+
+      <div className="np-section" style={{ borderStyle: 'dotted', marginBottom: '1.5rem' }}>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', textTransform: 'uppercase', fontSize: '0.8rem' }}>Payment Handle</p>
+        <p className="np-text-muted" style={{ marginBottom: '1rem', fontSize: '0.8rem', lineHeight: 1.5 }}>
+          Optional. Lets group members settle debts to you in one tap. Visible only to people you share a group with.
+        </p>
+        <input
+          type="text"
+          inputMode="email"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          value={upiId}
+          onChange={e => {
+            setUpiId(e.target.value);
+            setUpiMsg('');
+          }}
+          placeholder="yourname@bank"
+          maxLength={256}
+          style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }}
+        />
+        <NeoButton style={{ width: '100%', borderColor: 'var(--text-secondary)' }} onClick={handleUpdateUpiId} disabled={upiSaving}>
+          {upiSaving ? 'Saving...' : 'Update UPI ID'}
+        </NeoButton>
+        {upiMsg && (
+          <p style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: (upiMsg.includes('updated') || upiMsg.includes('removed')) ? 'var(--text-accent)' : 'var(--text-danger)' }}>
+            {upiMsg}
           </p>
         )}
       </div>

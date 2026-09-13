@@ -335,6 +335,63 @@ export async function createSettlement(groupId: string, fromId: string, toId: st
   }
 }
 
+/** The current user's saved UPI ID, or '' if they haven't set one. */
+export async function fetchMyUpiId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return '';
+
+  const { data, error } = await supabase
+    .from('user_payment_handles')
+    .select('upi_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.upi_id || '';
+}
+
+/** Saves (or clears, when passed '') the current user's UPI ID. */
+export async function saveMyUpiId(upiId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Authentication required');
+
+  const { error } = await supabase
+    .from('user_payment_handles')
+    .upsert({
+      user_id: user.id,
+      upi_id: upiId || null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+
+  if (error) throw error;
+}
+
+/**
+ * UPI IDs for the given members, keyed by user_id. RLS restricts this to
+ * co-members, so anyone not sharing a group simply comes back absent rather
+ * than erroring. Missing handles are expected — setting one is optional.
+ */
+export async function fetchUpiHandles(userIds: string[]): Promise<Record<string, string>> {
+  if (userIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('user_payment_handles')
+    .select('user_id, upi_id')
+    .in('user_id', userIds);
+
+  if (error) {
+    // A payment shortcut is never worth breaking the balances view over.
+    console.error('Failed fetching UPI handles:', error);
+    return {};
+  }
+
+  const handles: Record<string, string> = {};
+  for (const row of data || []) {
+    if (row.upi_id) handles[row.user_id] = row.upi_id;
+  }
+  return handles;
+}
+
 export async function fetchRecentSettlements(groupId: string) {
   const { data, error } = await supabase
     .from('expenses')

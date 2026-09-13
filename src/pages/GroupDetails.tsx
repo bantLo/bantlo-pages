@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses, fetchUpiHandles } from '../lib/api';
 import { getExpensesCached, updateCachedGroupStanding } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
+import SettleUpModal from '../components/SettleUpModal';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 
@@ -59,6 +60,22 @@ export default function GroupDetails() {
   }, [id]);
 
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [upiHandles, setUpiHandles] = useState<Record<string, string>>({});
+  const [pendingUpi, setPendingUpi] = useState<{ to: string; toName: string; amount: number } | null>(null);
+  const [settleTarget, setSettleTarget] = useState<{ from: string; to: string; toName: string; amount: number } | null>(null);
+
+  // Opening a UPI intent backgrounds the PWA, and the OS may tear the page down
+  // entirely. Parking the pending payment in sessionStorage means the "did that
+  // go through?" prompt survives the round trip instead of silently vanishing.
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const stored = sessionStorage.getItem(`bantlo_pending_upi_${id}`);
+      if (stored) setPendingUpi(JSON.parse(stored));
+    } catch (err) {
+      console.error('Could not restore pending UPI payment:', err);
+    }
+  }, [id]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -144,6 +161,12 @@ export default function GroupDetails() {
       setMembers(mData);
       setBalances(bData);
       setExpenses(eData);
+
+      // Best-effort: a missing payment shortcut must never block the ledger.
+      fetchUpiHandles(mData.map((m: any) => m.user_id))
+        .then(setUpiHandles)
+        .catch(err => console.error('UPI handle lookup failed:', err));
+
       setExpenseCount(countTemp);
       setHasMore(countTemp > eData.length);
 
@@ -398,6 +421,77 @@ export default function GroupDetails() {
 
 
 
+  /**
+   * Hands off to the user's UPI app with the payment pre-filled, and parks the
+   * details so we can ask for confirmation on their return.
+   *
+   * There is no callback from a UPI intent — we cannot know whether the payment
+   * happened. The settlement is only recorded when the user says so.
+   */
+  const handleUpiPay = (url: string) => {
+    if (!settleTarget) return;
+
+    const pending = { to: settleTarget.to, toName: settleTarget.toName, amount: settleTarget.amount };
+    setPendingUpi(pending);
+    try {
+      sessionStorage.setItem(`bantlo_pending_upi_${id}`, JSON.stringify(pending));
+    } catch (err) {
+      console.error('Could not persist pending UPI payment:', err);
+    }
+
+    setSettleTarget(null);
+    window.location.href = url;
+  };
+
+  /** "Already paid" — straight to the settlement form, recorded as a manual payment. */
+  const handleMarkPaid = () => {
+    if (!settleTarget) return;
+    setQuickSettle({ from: settleTarget.from, to: settleTarget.to, amount: settleTarget.amount });
+    setSettleTarget(null);
+    setShowAddSettlement(true);
+  };
+
+  const dismissPendingUpi = () => {
+    setPendingUpi(null);
+    try {
+      sessionStorage.removeItem(`bantlo_pending_upi_${id}`);
+    } catch (err) {
+      console.error('Could not clear pending UPI payment:', err);
+    }
+  };
+
+  const confirmPendingUpi = () => {
+    if (!pendingUpi) return;
+    // Route through the normal settlement form, pre-filled, so the user gets one
+    // last look at the amount before anything is written to the ledger.
+    setQuickSettle({ from: currentUserId, to: pendingUpi.to, amount: pendingUpi.amount });
+    setShowAddSettlement(true);
+    dismissPendingUpi();
+  };
+
+  const renderPendingUpiPrompt = () => {
+    if (!pendingUpi) return null;
+    return (
+      <div style={{ padding: '1.25rem', background: 'var(--bg-dark)', border: '2px dashed var(--text-accent)' }}>
+        <p style={{ margin: '0 0 0.5rem 0', fontWeight: 'bold', color: 'var(--text-accent)', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+          Payment opened
+        </p>
+        <p className="np-text-muted" style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', lineHeight: 1.5 }}>
+          Did your {group?.currency} {pendingUpi.amount.toFixed(2)} payment to <strong>{pendingUpi.toName}</strong> go through?
+          bantLo can't see your UPI app, so nothing is recorded until you confirm.
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <NeoButton variant="primary" style={{ flex: 1, minWidth: '130px', borderColor: 'var(--text-accent)' }} onClick={confirmPendingUpi}>
+            Yes, record it
+          </NeoButton>
+          <NeoButton style={{ flex: 1, minWidth: '130px' }} onClick={dismissPendingUpi}>
+            Not yet
+          </NeoButton>
+        </div>
+      </div>
+    );
+  };
+
   const renderBalancesAndSuggestions = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -427,6 +521,7 @@ export default function GroupDetails() {
             Quick Settle Suggestions
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {renderPendingUpiPrompt()}
             {(() => {
               const debtors = balances.filter(b => Number(b.balance) < -0.01).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) }));
               const creditors = balances.filter(b => Number(b.balance) > 0.01).map(b => ({ ...b, amount: Number(b.balance) }));
@@ -451,7 +546,9 @@ export default function GroupDetails() {
               return results.map((r, i) => {
                 const fromProfile = members.find(m => m.user_id === r.from.user_id)?.profiles;
                 const toProfile = members.find(m => m.user_id === r.to.user_id)?.profiles;
-                
+
+                const payeeName = toProfile?.display_name || toProfile?.email || 'bantLo user';
+
                 return (
                   <div 
                     key={i} 
@@ -478,10 +575,12 @@ export default function GroupDetails() {
                       </span>
                       
                       <button 
-                        onClick={() => { 
-                          setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
-                          setShowAddSettlement(true); 
-                        }}
+                        onClick={() => setSettleTarget({
+                          from: r.from.user_id,
+                          to: r.to.user_id,
+                          toName: payeeName,
+                          amount: Number(r.amount)
+                        })}
                         style={{ 
                           background: 'var(--text-accent)', 
                           color: 'black', 
@@ -498,6 +597,7 @@ export default function GroupDetails() {
                         Settle Now ›
                       </button>
                     </div>
+
                   </div>
                 );
               });
@@ -558,6 +658,19 @@ export default function GroupDetails() {
 
   return (
     <div className="np-container np-fade-in">
+      <SettleUpModal
+        isOpen={!!settleTarget}
+        payeeName={settleTarget?.toName || ''}
+        payeeUpiId={settleTarget ? upiHandles[settleTarget.to] : undefined}
+        amount={settleTarget?.amount || 0}
+        currency={group?.currency || ''}
+        groupName={group?.name}
+        isPayer={settleTarget?.from === currentUserId}
+        onPayViaUpi={handleUpiPay}
+        onMarkPaid={handleMarkPaid}
+        onClose={() => setSettleTarget(null)}
+      />
+
       {toastMessage && (
         <div className="np-toast-in" style={{
           position: 'fixed',
@@ -785,111 +898,7 @@ export default function GroupDetails() {
 
         {activeTab === 'balances' && (
           <div className={animClass}>
-          <div className="np-grid-desktop">
-            <div className="np-section" style={{ borderStyle: 'dashed' }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Member Balances</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {balances.map((b: any, idx: number) => {
-                  const amt = Number(b.balance);
-                  const member = members.find(m => m.user_id === b.user_id);
-                  return (
-                    <div key={idx} className="np-flex-between" style={{ padding: '0.5rem', borderBottom: '1px solid #333' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                         <span>{member?.profiles?.display_name || member?.profiles?.email || 'Unknown User'}</span>
-                         <span className="np-text-muted" style={{ fontSize: '0.7rem' }}>{member?.profiles?.email || 'No email registered'}</span>
-                      </div>
-                      <span style={{ fontWeight: 'bold', color: amt === 0 ? 'var(--text-secondary)' : (amt > 0 ? 'var(--text-accent)' : 'var(--text-danger)') }}>
-                        {amt > 0 ? '+' : ''}{amt.toFixed(2)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="np-section" style={{ borderStyle: 'dotted', borderColor: 'var(--text-accent)', background: 'rgba(0,183,114,0.03)' }}>
-              <h2 style={{ fontSize: '1.0rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-accent)', letterSpacing: '1px' }}>
-                Quick Settle Suggestions
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {(() => {
-                  const debtors = balances.filter(b => Number(b.balance) < -0.01).map(b => ({ ...b, amount: Math.abs(Number(b.balance)) }));
-                  const creditors = balances.filter(b => Number(b.balance) > 0.01).map(b => ({ ...b, amount: Number(b.balance) }));
-                  
-                  const results = [];
-                  let d = 0, c = 0;
-                  while(d < debtors.length && c < creditors.length) {
-                    const amt = Math.min(debtors[d].amount, creditors[c].amount);
-                    results.push({ from: debtors[d], to: creditors[c], amount: amt });
-                    debtors[d].amount -= amt;
-                    creditors[c].amount -= amt;
-                    if (debtors[d].amount < 0.01) d++;
-                    if (creditors[c].amount < 0.01) c++;
-                  }
-
-                  if (results.length === 0) return (
-                    <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px dashed #333' }}>
-                      <p className="np-text-muted" style={{ margin: 0 }}>Everyone is settled! ✔</p>
-                    </div>
-                  );
-
-                  return results.map((r, i) => {
-                    const fromProfile = members.find(m => m.user_id === r.from.user_id)?.profiles;
-                    const toProfile = members.find(m => m.user_id === r.to.user_id)?.profiles;
-                    
-                    return (
-                      <div 
-                        key={i} 
-                        style={{ 
-                          padding: '1.25rem', 
-                          background: 'var(--bg-dark)', 
-                          border: '2px solid var(--border-color)',
-                          borderRadius: '0px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '1rem'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'white' }}>
-                          <span style={{ fontWeight: 'bold' }}>{fromProfile?.display_name || 'User'}</span>
-                          <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.2rem' }}>pays</span>
-                          <span style={{ opacity: 0.3 }}>→</span>
-                          <span style={{ fontWeight: 'bold' }}>{toProfile?.display_name || 'User'}</span>
-                        </div>
-                        
-                        <div className="np-flex-between">
-                          <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-accent)' }}>
-                            {group.currency} {r.amount.toFixed(2)}
-                          </span>
-                          
-                          <button 
-                            onClick={() => { 
-                              setQuickSettle({ from: r.from.user_id, to: r.to.user_id, amount: Number(r.amount) }); 
-                              setShowAddSettlement(true); 
-                            }}
-                            style={{ 
-                              background: 'var(--text-accent)', 
-                              color: 'black', 
-                              border: '2px solid black', 
-                              padding: '0.4rem 0.8rem', 
-                              fontWeight: 'bold', 
-                              cursor: 'pointer', 
-                              fontSize: '0.75rem',
-                              borderRadius: '0px',
-                              boxShadow: '2px 2px 0px black',
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            Settle Now ›
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-          </div>
+          {renderBalancesAndSuggestions()}
 
           {showAddSettlement && (
             <div style={{ marginTop: '1.5rem' }}>
