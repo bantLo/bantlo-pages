@@ -156,16 +156,30 @@ export default function GroupDetails() {
       const gData = await fetchGroupDetails(groupId);
       setGroup(gData);
       
-      const [mData, bData, eData, countTemp] = await Promise.all([
+      // Settled, not all: these are independent reads, and a single failure
+      // used to reject the whole batch and leave the screen with no members,
+      // no balances and no expenses — a far worse outcome than one missing
+      // section. Partial data beats a blank group.
+      const [mRes, bRes, eRes, countRes] = await Promise.allSettled([
         fetchGroupMembers(groupId),
         fetchGroupBalances(groupId),
         fetchRecentExpenses(groupId, 20),
         fetchExpenseCount(groupId)
       ]);
-      
+
+      for (const [label, res] of [['members', mRes], ['balances', bRes], ['expenses', eRes], ['count', countRes]] as const) {
+        if (res.status === 'rejected') console.error(`Failed loading ${label}:`, res.reason);
+      }
+
+      const mData = mRes.status === 'fulfilled' ? mRes.value : [];
+      const bData = bRes.status === 'fulfilled' ? bRes.value : [];
+      const eData = eRes.status === 'fulfilled' ? eRes.value : [];
+      const countTemp = countRes.status === 'fulfilled' ? countRes.value : 0;
+
       setMembers(mData);
       setBalances(bData);
-      setExpenses(eData);
+      // Keep whatever the cache already painted if the network read failed.
+      if (eRes.status === 'fulfilled') setExpenses(eData);
 
       // Best-effort: a missing payment shortcut must never block the ledger.
       fetchUpiHandles(mData.map((m: any) => m.user_id))
