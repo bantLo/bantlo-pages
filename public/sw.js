@@ -3,7 +3,6 @@
 // so a constant name meant the cleanup never ran. Bump this whenever cached
 // entries need to be discarded wholesale.
 const CACHE_NAME = 'bantlo-app-shell-v2';
-const DATA_CACHE_NAME = 'bantlo-data-cache-v1';
 
 // App shell files setup
 const STATIC_ASSETS = [
@@ -23,6 +22,10 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// Note: the app's offline data — cached groups, expenses and the pending
+// mutation queue — lives in an IndexedDB database, which happens to share the
+// name 'bantlo-data-cache-v1'. That is a different storage API entirely and is
+// unreachable from caches.delete(), so nothing here can touch it.
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
   // Preemptively clean up old caches if version changes
@@ -30,7 +33,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME) {
+          if (cacheName !== CACHE_NAME) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
