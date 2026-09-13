@@ -48,14 +48,6 @@ if (missing(table)) {
   console.log('✓ user_payment_handles exists and is reachable');
 }
 
-const column = await probe('expenses?select=settlement_method&limit=1');
-if (missing(column)) {
-  ok = false;
-  console.log('✗ expenses.settlement_method — not found.');
-} else {
-  console.log('✓ expenses.settlement_method exists');
-}
-
 console.log(
   ok
     ? '\nMigration looks applied. Add a UPI ID under Account Settings to try it.'

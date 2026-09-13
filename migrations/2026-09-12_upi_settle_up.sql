@@ -72,18 +72,3 @@ CREATE POLICY "Update own payment handle" ON user_payment_handles
 
 CREATE POLICY "Delete own payment handle" ON user_payment_handles
   FOR DELETE USING (user_id = auth.uid());
-
-
--- ------------------------------------------------------------
--- 4. Settlement provenance
--- ------------------------------------------------------------
--- Settlements are stored as rows in `expenses` with is_settlement = true
--- (see createSettlement in src/lib/api.ts) — there is no separate settlements
--- table in the live schema, despite the legacy policies referencing one.
---
--- 'upi_intent' records only that a payment app was opened with these details.
--- It is NOT confirmation that the money moved, and must never be rendered as such.
-
-ALTER TABLE expenses
-  ADD COLUMN IF NOT EXISTS settlement_method TEXT
-  CHECK (settlement_method IS NULL OR settlement_method IN ('manual', 'upi_intent'));

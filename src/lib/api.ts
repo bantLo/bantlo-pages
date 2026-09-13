@@ -284,13 +284,7 @@ export async function fetchExpenseCount(groupId: string) {
   return count || 0;
 }
 
-export async function createSettlement(
-  groupId: string,
-  fromId: string,
-  toId: string,
-  amount: number,
-  method: 'manual' | 'upi_intent' = 'manual'
-) {
+export async function createSettlement(groupId: string, fromId: string, toId: string, amount: number) {
   let createdExpenseId: string | null = null;
   try {
     // 1. Create the primary expense record
@@ -301,8 +295,7 @@ export async function createSettlement(
         amount: amount,
         description: 'Settle Payment',
         split_type: 1, // Exact
-        is_settlement: true,
-        settlement_method: method
+        is_settlement: true
       }])
       .select('id, group_id, description, amount, created_at, is_settlement')
       .single();

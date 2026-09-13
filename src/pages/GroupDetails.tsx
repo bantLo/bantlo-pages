@@ -37,7 +37,7 @@ export default function GroupDetails() {
   const [tabDirection, setTabDirection] = useState<'left' | 'right' | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
-  const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number, method?: 'manual' | 'upi_intent'} | null>(null);
+  const [quickSettle, setQuickSettle] = useState<{from: string, to: string, amount: number} | null>(null);
   const [inviteLink, setInviteLink] = useState('');
 
   const [toastMessage, setToastMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
@@ -446,7 +446,7 @@ export default function GroupDetails() {
   /** "Already paid" — straight to the settlement form, recorded as a manual payment. */
   const handleMarkPaid = () => {
     if (!settleTarget) return;
-    setQuickSettle({ from: settleTarget.from, to: settleTarget.to, amount: settleTarget.amount, method: 'manual' });
+    setQuickSettle({ from: settleTarget.from, to: settleTarget.to, amount: settleTarget.amount });
     setSettleTarget(null);
     setShowAddSettlement(true);
   };
@@ -464,7 +464,7 @@ export default function GroupDetails() {
     if (!pendingUpi) return;
     // Route through the normal settlement form, pre-filled, so the user gets one
     // last look at the amount before anything is written to the ledger.
-    setQuickSettle({ from: currentUserId, to: pendingUpi.to, amount: pendingUpi.amount, method: 'upi_intent' });
+    setQuickSettle({ from: currentUserId, to: pendingUpi.to, amount: pendingUpi.amount });
     setShowAddSettlement(true);
     dismissPendingUpi();
   };
@@ -790,7 +790,6 @@ export default function GroupDetails() {
                   initialFromId={quickSettle?.from}
                   initialToId={quickSettle?.to}
                   initialAmount={quickSettle?.amount}
-                  method={quickSettle?.method}
                   onComplete={handleSettlementSaved} 
                   onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
                 />
@@ -1012,7 +1011,6 @@ export default function GroupDetails() {
                 initialFromId={quickSettle?.from}
                 initialToId={quickSettle?.to}
                 initialAmount={quickSettle?.amount}
-                method={quickSettle?.method}
                 onComplete={handleSettlementSaved} 
                 onCancel={() => { setShowAddSettlement(false); setQuickSettle(null); }} 
               />
