@@ -19,7 +19,7 @@ interface CalcInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement
  * Invalid input is never discarded: the raw text stays put and an inline error is
  * shown, so the user can correct the typo instead of retyping from scratch.
  */
-export default function CalcInput({ value, onValueChange, style, ...rest }: CalcInputProps) {
+export default function CalcInput({ value, onValueChange, style, onFocus, onBlur, ...rest }: CalcInputProps) {
   const [text, setText] = useState(value === '' ? '' : String(value));
   const [error, setError] = useState<string | null>(null);
   const focused = useRef(false);
@@ -96,8 +96,11 @@ export default function CalcInput({ value, onValueChange, style, ...rest }: Calc
         aria-invalid={!!error}
         value={text}
         onChange={handleChange}
-        onFocus={() => { focused.current = true; }}
-        onBlur={() => { focused.current = false; commit(); }}
+        // Composed rather than spread-overridden: {...rest} lands after these,
+        // so a caller-supplied onFocus/onBlur would otherwise silently replace
+        // the focus tracking the mirror effect depends on.
+        onFocus={(e) => { focused.current = true; onFocus?.(e); }}
+        onBlur={(e) => { focused.current = false; commit(); onBlur?.(e); }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && isExpression(text)) {
             e.preventDefault();

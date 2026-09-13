@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses, fetchUpiHandles } from '../lib/api';
+import { fetchGroupDetails, fetchGroupMembers, fetchGroupBalances, fetchRecentExpenses, addMemberByEmail, deleteExpense, updateGroupSettings, removeMember, deleteGroup, fetchExpenseCount, createGroupInvite, fetchMoreExpenses, fetchUpiHandles, fetchGroupPresets, fetchLastPresetAmounts, createExpenseFromPreset, type ExpensePreset } from '../lib/api';
 import { getExpensesCached, updateCachedGroupStanding } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import AddExpense from '../components/AddExpense';
 import AddSettlement from '../components/AddSettlement';
 import SettleUpModal from '../components/SettleUpModal';
+import QuickAddPreset from '../components/QuickAddPreset';
+import PresetManager from '../components/PresetManager';
 import BackButton from '../components/BackButton';
 import NeoButton from '../components/NeoButton';
 
@@ -63,6 +65,9 @@ export default function GroupDetails() {
   const [upiHandles, setUpiHandles] = useState<Record<string, string>>({});
   const [pendingUpi, setPendingUpi] = useState<{ to: string; toName: string; amount: number } | null>(null);
   const [settleTarget, setSettleTarget] = useState<{ from: string; to: string; toName: string; amount: number } | null>(null);
+  const [presets, setPresets] = useState<ExpensePreset[]>([]);
+  const [lastPresetAmounts, setLastPresetAmounts] = useState<Record<string, number>>({});
+  const [quickAdd, setQuickAdd] = useState<ExpensePreset | null>(null);
 
   // Opening a UPI intent backgrounds the PWA, and the OS may tear the page down
   // entirely. Parking the pending payment in sessionStorage means the "did that
@@ -151,21 +156,37 @@ export default function GroupDetails() {
       const gData = await fetchGroupDetails(groupId);
       setGroup(gData);
       
-      const [mData, bData, eData, countTemp] = await Promise.all([
+      // Settled, not all: these are independent reads, and a single failure
+      // used to reject the whole batch and leave the screen with no members,
+      // no balances and no expenses — a far worse outcome than one missing
+      // section. Partial data beats a blank group.
+      const [mRes, bRes, eRes, countRes] = await Promise.allSettled([
         fetchGroupMembers(groupId),
         fetchGroupBalances(groupId),
         fetchRecentExpenses(groupId, 20),
         fetchExpenseCount(groupId)
       ]);
-      
+
+      for (const [label, res] of [['members', mRes], ['balances', bRes], ['expenses', eRes], ['count', countRes]] as const) {
+        if (res.status === 'rejected') console.error(`Failed loading ${label}:`, res.reason);
+      }
+
+      const mData = mRes.status === 'fulfilled' ? mRes.value : [];
+      const bData = bRes.status === 'fulfilled' ? bRes.value : [];
+      const eData = eRes.status === 'fulfilled' ? eRes.value : [];
+      const countTemp = countRes.status === 'fulfilled' ? countRes.value : 0;
+
       setMembers(mData);
       setBalances(bData);
-      setExpenses(eData);
+      // Keep whatever the cache already painted if the network read failed.
+      if (eRes.status === 'fulfilled') setExpenses(eData);
 
       // Best-effort: a missing payment shortcut must never block the ledger.
       fetchUpiHandles(mData.map((m: any) => m.user_id))
         .then(setUpiHandles)
         .catch(err => console.error('UPI handle lookup failed:', err));
+
+      loadPresets(groupId);
 
       setExpenseCount(countTemp);
       setHasMore(countTemp > eData.length);
@@ -179,6 +200,30 @@ export default function GroupDetails() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const loadPresets = (groupId: string) => {
+    // Presets are a shortcut, not part of the ledger — failures stay quiet.
+    fetchGroupPresets(groupId)
+      .then(setPresets)
+      .catch(err => console.error('Preset load failed:', err));
+    fetchLastPresetAmounts(groupId)
+      .then(setLastPresetAmounts)
+      .catch(err => console.error('Last-amount lookup failed:', err));
+  };
+
+  const handleQuickAddSubmit = async (amount: number, payerId: string, memberIds: string[]) => {
+    if (!id || !quickAdd) return;
+    await createExpenseFromPreset(id, quickAdd, amount, payerId, memberIds);
+    setQuickAdd(null);
+    setToastMessage({ text: `${quickAdd.name} added.`, type: 'success' });
+    await loadGroupData(id);
+  };
+
+  /** Escape hatch: open the full form for the month where the preset doesn't fit. */
+  const handleQuickAddEditDetails = (_amount: number | '') => {
+    setQuickAdd(null);
+    setShowAddExpense(true);
   };
 
   const handleLoadMore = async () => {
@@ -658,6 +703,22 @@ export default function GroupDetails() {
 
   return (
     <div className="np-container np-fade-in">
+      {/* Mounted only while open, and keyed on the preset: the modal seeds its
+          amount and payer from props via useState, which only reads its argument
+          on first mount. Rendered unconditionally it would initialise once with
+          preset === null and ignore every preset opened afterwards. */}
+      {quickAdd && <QuickAddPreset
+        key={quickAdd.id}
+        preset={quickAdd}
+        members={members}
+        currency={group?.currency || ''}
+        currentUserId={currentUserId}
+        lastAmount={quickAdd ? lastPresetAmounts[quickAdd.id] : undefined}
+        onSubmit={handleQuickAddSubmit}
+        onEditDetails={handleQuickAddEditDetails}
+        onClose={() => setQuickAdd(null)}
+      />}
+
       <SettleUpModal
         isOpen={!!settleTarget}
         payeeName={settleTarget?.toName || ''}
@@ -767,6 +828,38 @@ export default function GroupDetails() {
           <div className={`np-expenses-layout ${animClass}`}>
           <div className="np-expenses-main">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              {!showAddExpense && presets.length > 0 && (
+                <div style={{ padding: '0.9rem', border: '1px dashed var(--border-color)' }}>
+                  <p className="np-text-muted" style={{ margin: '0 0 0.6rem 0', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Quick Add
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {presets.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => setQuickAdd(preset)}
+                        style={{
+                          padding: '0.5rem 0.9rem',
+                          background: 'var(--bg-dark)',
+                          color: 'var(--text-primary)',
+                          border: '2px solid var(--text-accent)',
+                          boxShadow: '2px 2px 0px var(--text-accent)',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        {preset.name}
+                        {preset.default_amount != null && (
+                          <span style={{ opacity: 0.6, fontWeight: 'normal' }}> · {Number(preset.default_amount).toFixed(0)}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {!showAddExpense && (
                 <NeoButton variant="primary" onClick={() => setShowAddExpense(true)} style={{ width: '100%' }}>
                   + Add Expense
@@ -918,6 +1011,15 @@ export default function GroupDetails() {
 
         {activeTab === 'management' && (
           <div className={`np-grid-desktop ${animClass}`}>
+          <PresetManager
+            groupId={id!}
+            members={members}
+            presets={presets}
+            currency={group?.currency || ''}
+            currentUserId={currentUserId}
+            onChanged={() => id && loadPresets(id)}
+          />
+
           {/* Column 1: Administrative Actions */}
           <div className="np-section" style={{ borderStyle: 'dashed', margin: 0 }}>
             <h2 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textTransform: 'uppercase', color: 'var(--text-accent)' }}>Administrative Actions</h2>

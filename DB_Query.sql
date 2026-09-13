@@ -514,3 +514,82 @@ CREATE POLICY "Update own payment handle" ON user_payment_handles
 
 CREATE POLICY "Delete own payment handle" ON user_payment_handles
   FOR DELETE USING (user_id = auth.uid());
+
+
+-- ==========================================
+-- Expense Presets (Quick Add)
+-- ==========================================
+-- A preset is a recurring expense minus the amount: a name, a roster of who it
+-- splits between, and optionally a default payer and default amount. Tapping
+-- one on the group screen asks for the amount and books the expense.
+--
+-- Presets only pre-fill what a normal expense insert would have written. The
+-- splits and payments they produce are ordinary rows, so the balance triggers
+-- are untouched by this feature.
+
+CREATE TABLE IF NOT EXISTS expense_presets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  -- NULL means "ask every time" (milk, groceries). A value pre-fills the
+  -- amount field but never locks it — rent does change.
+  default_amount NUMERIC(10,2) CHECK (default_amount IS NULL OR default_amount > 0),
+  -- NULL means "whoever is adding it".
+  payer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_expense_presets_name
+  ON expense_presets (group_id, lower(name));
+CREATE INDEX IF NOT EXISTS idx_expense_presets_group ON expense_presets(group_id);
+
+CREATE TABLE IF NOT EXISTS preset_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  preset_id UUID REFERENCES expense_presets(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  UNIQUE(preset_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_preset_members_preset ON preset_members(preset_id);
+
+-- ON DELETE SET NULL, never CASCADE: deleting a preset must not delete the
+-- expenses booked through it, which would fire the balance-reversal trigger
+-- and silently rewrite everyone's standing.
+ALTER TABLE expenses
+  ADD COLUMN IF NOT EXISTS preset_id UUID REFERENCES expense_presets(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_expenses_preset ON expenses(preset_id);
+
+ALTER TABLE expense_presets ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "View presets natively" ON expense_presets;
+DROP POLICY IF EXISTS "Insert presets natively" ON expense_presets;
+DROP POLICY IF EXISTS "Update presets natively" ON expense_presets;
+DROP POLICY IF EXISTS "Delete presets natively" ON expense_presets;
+
+CREATE POLICY "View presets natively" ON expense_presets
+  FOR SELECT USING (is_group_member(group_id));
+CREATE POLICY "Insert presets natively" ON expense_presets
+  FOR INSERT WITH CHECK (is_group_member(group_id));
+CREATE POLICY "Update presets natively" ON expense_presets
+  FOR UPDATE USING (is_group_member(group_id));
+CREATE POLICY "Delete presets natively" ON expense_presets
+  FOR DELETE USING (is_group_member(group_id));
+
+ALTER TABLE preset_members ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "View preset members natively" ON preset_members;
+DROP POLICY IF EXISTS "Insert preset members natively" ON preset_members;
+DROP POLICY IF EXISTS "Update preset members natively" ON preset_members;
+DROP POLICY IF EXISTS "Delete preset members natively" ON preset_members;
+
+-- Reached through the parent preset, the same way expense_splits reaches expenses.
+CREATE POLICY "View preset members natively" ON preset_members
+  FOR SELECT USING (EXISTS (SELECT 1 FROM expense_presets p WHERE p.id = preset_id AND is_group_member(p.group_id)));
+CREATE POLICY "Insert preset members natively" ON preset_members
+  FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM expense_presets p WHERE p.id = preset_id AND is_group_member(p.group_id)));
+CREATE POLICY "Update preset members natively" ON preset_members
+  FOR UPDATE USING (EXISTS (SELECT 1 FROM expense_presets p WHERE p.id = preset_id AND is_group_member(p.group_id)));
+CREATE POLICY "Delete preset members natively" ON preset_members
+  FOR DELETE USING (EXISTS (SELECT 1 FROM expense_presets p WHERE p.id = preset_id AND is_group_member(p.group_id)));

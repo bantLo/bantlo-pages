@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import NeoButton from './NeoButton';
 import CalcInput from './CalcInput';
 import { updateFullExpense } from '../lib/api';
+import { EXPENSE_SELECT } from '../lib/expenseFields';
 
 interface Member {
   user_id: string;
@@ -198,7 +199,7 @@ export default function AddExpense({ groupId, members, onComplete, onCancel, edi
         // Fetch full formatted record for UI sync
         const { data: fullRecord, error: e3 } = await supabase
           .from('expenses')
-          .select('id, group_id, description, amount, created_at, split_type, payments:expense_payments(user_id, amount_paid, profiles:user_id(display_name, email)), splits:expense_splits(user_id, amount_owed)')
+          .select(EXPENSE_SELECT)
           .eq('id', exp.id)
           .single();
         
