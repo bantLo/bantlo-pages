@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NeoButton from './NeoButton';
 import CalcInput from './CalcInput';
 import { createPreset, updatePreset, deletePreset, setPresetMembers, type ExpensePreset } from '../lib/api';
@@ -47,12 +47,23 @@ export default function PresetManager({ groupId, members, presets, currency, cur
 
   const startCreate = () => {
     resetForm();
-    // Everyone in by default — the common case is "splits between all of us",
-    // and unchecking a couple is less work than checking everyone.
     setSelected(Object.fromEntries(members.map(m => [m.user_id, true])));
     setEditingId(null);
     setCreating(true);
   };
+
+  // Everyone in by default — the common case is "splits between all of us", and
+  // unchecking a couple is less work than checking everyone.
+  //
+  // Seeded here rather than only in startCreate because members load
+  // asynchronously: opening the form before they arrive would otherwise snapshot
+  // an empty roster and leave every chip off. An empty map means untouched — once
+  // the user toggles anything the keys exist, so their choice is never overwritten.
+  useEffect(() => {
+    if (creating && members.length > 0 && Object.keys(selected).length === 0) {
+      setSelected(Object.fromEntries(members.map(m => [m.user_id, true])));
+    }
+  }, [creating, members, selected]);
 
   const startEdit = (preset: ExpensePreset) => {
     resetForm();
