@@ -15,13 +15,34 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
+      // The service worker caches the app shell, which is the whole point in
+      // production and actively harmful in development: reloads serve a mix of
+      // cached and fresh assets, so a change appears to land intermittently or
+      // to regress. Skip registration on local origins, and tear down any
+      // worker already registered there from a previous session.
+      (function () {
+        if (!('serviceWorker' in navigator)) return;
+
+        var host = location.hostname;
+        var isLocal = host === 'localhost'
+          || host === '127.0.0.1'
+          || /^192\.168\./.test(host)
+          || /^10\./.test(host)
+          || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+
+        if (isLocal) {
+          navigator.serviceWorker.getRegistrations()
+            .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
+            .catch(function (err) { console.error('SW cleanup failed:', err); });
+          return;
+        }
+
+        window.addEventListener('load', function () {
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(reg => console.log('SW Reg Success:', reg.scope))
-            .catch(err => console.error('SW Reg Failure:', err));
+            .then(function (reg) { console.log('SW Reg Success:', reg.scope); })
+            .catch(function (err) { console.error('SW Reg Failure:', err); });
         });
-      }
+      })();
     </script>
   </body>
 </html>
