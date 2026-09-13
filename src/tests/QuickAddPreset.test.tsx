@@ -60,12 +60,26 @@ describe('QuickAddPreset', () => {
   });
 
   it("defaults the payer to the preset's, falling back to the current user", () => {
+    // The payer picker is a chip row, not a native select — the pressed chip is
+    // the selected payer.
     const { unmount } = render(<QuickAddPreset {...defaultProps} preset={rent} />);
-    expect(screen.getByRole('combobox')).toHaveValue('u2');
+    expect(screen.getByRole('button', { name: 'Jatin', pressed: true })).toBeInTheDocument();
     unmount();
 
     render(<QuickAddPreset {...defaultProps} />);
-    expect(screen.getByRole('combobox')).toHaveValue('u1');
+    expect(screen.getByRole('button', { name: 'You', pressed: true })).toBeInTheDocument();
+  });
+
+  it('changes the payer when another chip is picked', async () => {
+    render(<QuickAddPreset {...defaultProps} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ankit' }));
+    fireEvent.change(screen.getByPlaceholderText(/Amount/), { target: { value: '90' } });
+    fireEvent.blur(screen.getByPlaceholderText(/Amount/));
+    fireEvent.click(screen.getByText('Add INR 90.00 Expense'));
+
+    await waitFor(() =>
+      expect(defaultProps.onSubmit).toHaveBeenCalledWith(90, 'u3', ['u1', 'u2', 'u3'])
+    );
   });
 
   it('shows a last-time hint only when there is no fixed amount', () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import NeoButton from './NeoButton';
 import CalcInput from './CalcInput';
+import ChipSelect from './ChipSelect';
 import { createPreset, updatePreset, deletePreset, setPresetMembers, type ExpensePreset } from '../lib/api';
 
 interface Member {
@@ -205,14 +206,17 @@ export default function PresetManager({ groupId, members, presets, currency, cur
             <p className="np-text-muted" style={{ marginBottom: '0.4rem', fontSize: '0.8rem' }}>
               Usually paid by <span style={{ opacity: 0.6 }}>— defaults to whoever adds it</span>
             </p>
-            <select value={payerId} onChange={e => setPayerId(e.target.value)} style={inputStyle}>
-              <option value="">Whoever adds it</option>
-              {members.map(m => (
-                <option key={m.user_id} value={m.user_id}>
-                  {m.user_id === currentUserId ? 'You' : nameOf(m)}
-                </option>
-              ))}
-            </select>
+            <ChipSelect
+              value={payerId}
+              onChange={setPayerId}
+              options={[
+                { value: '', label: 'Whoever adds it' },
+                ...members.map(m => ({
+                  value: m.user_id,
+                  label: m.user_id === currentUserId ? 'You' : nameOf(m).split(' ')[0]
+                }))
+              ]}
+            />
           </div>
 
           <div>

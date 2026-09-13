@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import NeoButton from './NeoButton';
 import CalcInput from './CalcInput';
+import ChipSelect from './ChipSelect';
 import type { ExpensePreset } from '../lib/api';
 
 interface Member {
@@ -128,17 +129,14 @@ export default function QuickAddPreset({
 
         <div style={{ marginBottom: '1.5rem' }}>
           <p className="np-text-muted" style={{ marginBottom: '0.4rem', fontSize: '0.8rem' }}>Paid by</p>
-          <select
+          <ChipSelect
             value={payerId}
-            onChange={e => setPayerId(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem', background: 'var(--bg-dark)', border: '2px solid var(--border-color)', color: 'white', outline: 'none', fontFamily: 'inherit' }}
-          >
-            {members.map(m => (
-              <option key={m.user_id} value={m.user_id}>
-                {m.user_id === currentUserId ? 'You' : nameOf(m)}
-              </option>
-            ))}
-          </select>
+            onChange={setPayerId}
+            options={members.map(m => ({
+              value: m.user_id,
+              label: m.user_id === currentUserId ? 'You' : nameOf(m).split(' ')[0]
+            }))}
+          />
         </div>
 
         {error && (
