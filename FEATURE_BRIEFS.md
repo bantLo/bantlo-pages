@@ -79,7 +79,7 @@ Deleting the "milk" tag must never move money.
 
 ### Files
 
-- `DB_Query.sql` + a new `migrations/` delta (the bootstrap script won't re-run on a live project)
+- `DB_Query.sql` — note it won't re-run on a live project, so the delta also has to be applied by hand there
 - `src/lib/api.ts` — `fetchGroupTags`, `createTag`, `updateTag`, `deleteTag`, `setTagMembers`
 - `src/lib/db.ts` — IDB version 2 → 3, add a `tags` store
 - `src/components/AddExpense.tsx` — chip row that overwrites `includedInEqual` / `shares`
