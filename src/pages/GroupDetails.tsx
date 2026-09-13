@@ -703,7 +703,12 @@ export default function GroupDetails() {
 
   return (
     <div className="np-container np-fade-in">
-      <QuickAddPreset
+      {/* Mounted only while open, and keyed on the preset: the modal seeds its
+          amount and payer from props via useState, which only reads its argument
+          on first mount. Rendered unconditionally it would initialise once with
+          preset === null and ignore every preset opened afterwards. */}
+      {quickAdd && <QuickAddPreset
+        key={quickAdd.id}
         preset={quickAdd}
         members={members}
         currency={group?.currency || ''}
@@ -712,7 +717,7 @@ export default function GroupDetails() {
         onSubmit={handleQuickAddSubmit}
         onEditDetails={handleQuickAddEditDetails}
         onClose={() => setQuickAdd(null)}
-      />
+      />}
 
       <SettleUpModal
         isOpen={!!settleTarget}

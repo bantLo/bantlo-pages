@@ -134,6 +134,25 @@ describe('QuickAddPreset', () => {
     expect(defaultProps.onSubmit).not.toHaveBeenCalled();
   });
 
+  it('seeds from the preset even when first rendered without one', () => {
+    // Regression: the modal used to be rendered unconditionally with preset={null}.
+    // useState only reads its argument on first mount, so the amount initialised
+    // to '' and every preset opened afterwards was ignored. The parent now mounts
+    // it per-preset with a key; this asserts the seeding a remount must produce.
+    const { rerender } = render(<QuickAddPreset {...defaultProps} preset={null} />);
+    expect(screen.queryByPlaceholderText(/Amount/)).not.toBeInTheDocument();
+
+    rerender(<MemoryRouter><QuickAddPreset {...defaultProps} key={rent.id} preset={rent} /></MemoryRouter>);
+    expect(screen.getByPlaceholderText(/Amount/)).toHaveValue('45000');
+  });
+
+  it('coerces a numeric default arriving as a string', () => {
+    // PostgREST can serialise NUMERIC as a string depending on configuration.
+    const asString = { ...rent, default_amount: '3000.00' as any };
+    render(<QuickAddPreset {...defaultProps} preset={asString} />);
+    expect(screen.getByText('Add INR 3000.00 Expense')).toBeInTheDocument();
+  });
+
   it('escapes to the full form via Edit details', () => {
     render(<QuickAddPreset {...defaultProps} />);
     fireEvent.click(screen.getByText('Edit details…'));

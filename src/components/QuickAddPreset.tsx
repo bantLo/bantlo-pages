@@ -51,7 +51,7 @@ export default function QuickAddPreset({
     ? preset.payer_id
     : currentUserId;
 
-  const [amount, setAmount] = useState<number | ''>(preset?.default_amount ?? '');
+  const [amount, setAmount] = useState<number | ''>(preset?.default_amount != null ? Number(preset.default_amount) : '');
   const [payerId, setPayerId] = useState(defaultPayer);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
